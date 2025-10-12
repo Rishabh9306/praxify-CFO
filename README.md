@@ -28,10 +28,52 @@ The project is organized into several key directories:
 
 ### Prerequisites
 
+**Option 1: Docker (Recommended for Production)**
+- Docker Engine 20.10+
+- Docker Compose 2.0+
+
+**Option 2: Local Development**
 - Python 3.9+
 - Pip
 
 ### Installation
+
+#### Using Docker (Recommended)
+
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-username/agentic-cfo-copilot.git
+    cd agentic-cfo-copilot
+    ```
+
+2.  **Quick start with Docker Compose:**
+    ```bash
+    # Build and start the services
+    docker-compose up -d
+    
+    # View logs
+    docker-compose logs -f aiml-engine
+    
+    # Access the API at http://localhost:8000
+    # API documentation at http://localhost:8000/docs
+    ```
+
+3.  **Using Make (optional):**
+    ```bash
+    # See all available commands
+    make help
+    
+    # Build and run
+    make build
+    make run
+    
+    # View logs
+    make logs
+    ```
+
+For detailed Docker deployment instructions including cloud deployment (AWS, GCP, Azure, Kubernetes), see [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md).
+
+#### Local Development Setup
 
 1.  **Clone the repository:**
     ```bash
