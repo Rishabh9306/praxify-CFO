@@ -1,0 +1,51 @@
+# requirements.txt
+#
+# FINAL GUARANTEED STABLE VERSION - V6 (Final Starlette Pin Correction)
+# Solves all conflicts by selecting known-compatible versions.
+
+# === Core Data Science Stack ===
+# This is our stable, non-negotiable base for binary compatibility.
+numpy==1.26.4
+pandas==2.2.2
+scikit-learn==1.4.2
+statsmodels==0.14.1
+scipy==1.13.1
+
+# === NLP STACK (The Anchor) ===
+# This stable spacy version dictates the version of `typer`.
+spacy==3.4.4
+typer<0.8.0 # Essential pin for spacy compatibility.
+
+# We also pin spacy's direct dependencies to avoid any ambiguity.
+thinc==8.1.5
+blis==0.7.9
+confection==0.0.4
+murmurhash==1.0.9
+preshed==3.0.8
+srsly==2.4.5
+catalogue==2.0.8
+wasabi==0.10.1
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.4.1/en_core_web_sm-3.4.1.tar.gz#egg=en_core_web_sm
+
+# === FORECASTING STACK ===
+prophet==1.1.5
+holidays==0.41 # Stable version for Prophet
+pmdarima==2.0.4
+cmdstanpy==1.2.2
+
+# === STABLE API STACK ===
+# This fastapi version (late 2023) is modern but does not have the
+# aggressive dependency issue of the newer versions. It will not install fastapi-cli.
+fastapi==0.104.1
+starlette==0.27.0 # Version compatible with fastapi 0.104.1
+uvicorn==0.29.0
+anyio==3.7.1 # The correct anyio version for this starlette
+python-multipart==0.0.7
+
+# === UTILITIES AND OTHER TOOLS ===
+shap==0.45.0
+matplotlib==3.8.4
+pytest==8.2.0
+requests==2.31.0
+jupyter==1.0.0
+plotly==5.22.0

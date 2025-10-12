@@ -1,0 +1,7 @@
+"Date of Sale", " Total Income ", "Operational Expenses", "REGION", "Profit (pre-tax)", "Notes"
+"2024/01/15", "$152,000", " $85,000 ", "NAM", "$67,000", "Initial quarter push"
+"2024/02/15", " $145,500 ", " $82,300 ", "NAM", "63200",
+"2024/03/15", "180000", "", "EMEA", "95000", "Expense data missing"
+"2024/04/15", "195000", "98000", "EMEA", "97000",
+"2024/05/15", "210,000", "110,000", "APAC", "100000", "Strong APAC growth"
+"2024/06/15", "", "105,000", "APAC", "115000", "Income data missing for reconciliation"
