@@ -2,6 +2,7 @@ import pandas as pd
 import io
 import json
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form
+# Use the proven, correct Response object
 from starlette.responses import Response 
 from typing import Dict, Any
 
@@ -13,15 +14,16 @@ from aiml_engine.core.anomaly_detection import AnomalyDetectionModule
 from aiml_engine.core.correlation import CrossMetricCorrelationTrendMiningEngine
 from aiml_engine.core.simulation import ScenarioSimulationEngine
 from aiml_engine.core.dashboard import BusinessDashboardOutputLayer
+# --- NEW INTEGRATION ---
+from aiml_engine.core.explainability import ExplainabilityAuditLayer
+# ---
+# Import our trusted encoder
 from aiml_engine.utils.helpers import CustomJSONEncoder
 
 router = APIRouter()
 
 def process_uploaded_file(file: UploadFile):
-    """
-    This function is correct and remains unchanged. It runs the core
-    data processing pipeline.
-    """
+    # This function is correct and unchanged.
     try:
         content = file.file.read()
         csv_data = io.StringIO(content.decode('utf-8'))
@@ -51,9 +53,6 @@ async def get_full_financial_report(
     mode: str = Form("finance_guardian"), 
     forecast_metric: str = Form("revenue")
 ):
-    """
-    Processes a CSV, runs the full AIML pipeline, and returns a robust JSON response.
-    """
     processing_results = process_uploaded_file(file)
     featured_df = processing_results["featured_df"]
     
@@ -66,30 +65,32 @@ async def get_full_financial_report(
     
     correlation_module = CrossMetricCorrelationTrendMiningEngine()
     correlation_report = correlation_module.generate_correlation_report(featured_df)
-    
+
+    # --- NEW: Call the explainability module ---
+    explainer_module = ExplainabilityAuditLayer()
+    profit_drivers = explainer_module.get_profit_drivers(featured_df)
+    # ---
+
     dashboard_module = BusinessDashboardOutputLayer()
     dashboard_output = dashboard_module.generate_dashboard(
         featured_df=featured_df, forecast=forecast, anomalies=anomalies,
         mode=mode, correlation_report=correlation_report
     )
     
-    # Assemble the final dictionary
+    # Assemble the final dictionary, adding all the pieces
     dashboard_output["supporting_reports"] = processing_results["reports"]
     dashboard_output["model_health_report"] = model_health
-
-    # --- THIS IS THE DATE FORMAT FIX ---
-    # Add the raw data preview with human-readable ISO date format.
-    # The `to_json` function handles the conversion from Unix time to a string.
     dashboard_output["raw_data_preview"] = json.loads(
         featured_df.head().to_json(orient='records', date_format='iso')
     )
-    # --- END OF FIX ---
+    # --- NEW: Add the insights to the final dictionary ---
+    dashboard_output["profit_drivers"] = profit_drivers
+    # ---
 
-    # Manually serialize the final dictionary to a JSON string using our proven encoder.
-    # This guarantees all NumPy, NaN, and other special types are correctly handled.
+    # Use the proven, manual serialization method that is guaranteed to work
     json_string = json.dumps(dashboard_output, cls=CustomJSONEncoder)
     
-    # Return a raw Starlette Response object, bypassing FastAPI's problematic logic.
+    # Return a raw Starlette Response object
     return Response(content=json_string, media_type="application/json")
 
 
@@ -97,9 +98,6 @@ async def get_full_financial_report(
 async def simulate_scenario_endpoint(
     file: UploadFile = File(...), parameter: str = Form(...), change_pct: float = Form(...)
 ):
-    """
-    Runs the simulation engine and returns a robust JSON response.
-    """
     processing_results = process_uploaded_file(file)
     featured_df = processing_results["featured_df"]
 
@@ -108,6 +106,6 @@ async def simulate_scenario_endpoint(
         df=featured_df, parameter=parameter, change_pct=change_pct
     )
     
-    # Apply the same manual serialization here for guaranteed robustness.
+    # Use the same proven manual serialization here
     json_string = json.dumps(simulation_report, cls=CustomJSONEncoder)
     return Response(content=json_string, media_type="application/json")
