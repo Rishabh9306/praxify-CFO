@@ -34,13 +34,12 @@ pmdarima==2.0.4
 cmdstanpy==1.2.2
 
 # === STABLE API STACK ===
-# This fastapi version (late 2023) is modern but does not have the
-# aggressive dependency issue of the newer versions. It will not install fastapi-cli.
-fastapi==0.104.1
-starlette==0.27.0 # Version compatible with fastapi 0.104.1
-uvicorn==0.29.0
-anyio==3.7.1 # The correct anyio version for this starlette
-python-multipart==0.0.7
+# Updated API stack with security patches (Jan 2024+ versions)
+fastapi==0.109.2  # Updated for security fixes
+starlette==0.36.3  # Updated to fix multipart DoS vulnerability (CVE-2024-24762)
+uvicorn[standard]==0.29.0
+anyio==3.7.1
+python-multipart==0.0.9  # Updated to fix path traversal vulnerability
 
 # === UTILITIES AND OTHER TOOLS ===
 shap==0.45.0
