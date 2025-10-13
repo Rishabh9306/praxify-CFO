@@ -1,4 +1,22 @@
 services:
+  # Redis service for conversational memory
+  redis:
+    image: redis:7-alpine
+    container_name: praxify-cfo-redis
+    ports:
+      - "${REDIS_PORT:-6380}:6379"  # Map to 6380 on host to avoid conflicts
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - praxify-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    command: redis-server --appendonly yes
+
   # Main AI/ML Engine API Service
   aiml-engine:
     build:
@@ -12,11 +30,17 @@ services:
       - PYTHONUNBUFFERED=1
       - ENV=${ENV:-production}
       - LOG_LEVEL=${LOG_LEVEL:-info}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
     volumes:
       # Mount volumes for data persistence
       - uploads_data:/app/uploads  # Persistent storage for uploaded files
       - outputs_data:/app/outputs  # Persistent storage for generated outputs
       - logs_data:/app/logs  # Persistent storage for logs
+    depends_on:
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - praxify-network
@@ -54,6 +78,8 @@ services:
       - with-nginx  # Only start nginx when explicitly requested
 
 volumes:
+  redis_data:
+    driver: local
   uploads_data:
     driver: local
   outputs_data:
