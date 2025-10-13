@@ -100,10 +100,8 @@ Follow these instructions perfectly to set up and run the entire AIML agent on y
 ### **Step 1: Clone the Repository**
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/Rishabh9306/praxify-CFO.git
 cd praxify-CFO
-Step 2: Set Up the Environment
-This project uses a .env file to manage secret keys.
 ```
 
 ### **Step 2: Set Up the Environment**
