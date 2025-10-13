@@ -34,12 +34,11 @@ pmdarima==2.0.4
 cmdstanpy==1.2.2
 
 # === STABLE API STACK ===
-# Updated API stack with security patches (Jan 2024+ versions)
-fastapi==0.109.2  # Updated for security fixes
-starlette==0.36.3  # Updated to fix multipart DoS vulnerability (CVE-2024-24762)
-uvicorn[standard]==0.29.0
-anyio==3.7.1
-python-multipart==0.0.9  # Updated to fix path traversal vulnerability
+# Updated API stack with latest security patches
+fastapi==0.115.5  # Latest stable with security fixes
+starlette==0.41.3  # Latest - fixes multiple CVEs including multipart DoS
+uvicorn[standard]==0.32.1  # Latest with performance improvements
+python-multipart==0.0.12  # Latest - fixes path traversal and ReDoS vulnerabilities
 
 # === UTILITIES AND OTHER TOOLS ===
 shap==0.45.0
