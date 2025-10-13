@@ -49,3 +49,10 @@ pytest==8.2.0
 requests==2.31.0
 jupyter==1.0.0
 plotly==5.22.0
+python-dotenv==1.0.1
+
+# === LLM ===
+google-generativeai==0.7.2
+
+# === Redis Server ===
+redis==5.0.7
