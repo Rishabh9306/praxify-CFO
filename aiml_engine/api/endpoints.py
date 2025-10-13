@@ -1,5 +1,6 @@
 import pandas as pd
 import io
+import os
 import json
 import uuid
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form
@@ -22,15 +23,21 @@ from aiml_engine.core.memory import ConversationalMemory
 from aiml_engine.core.agent import Agent
 # ---
 from aiml_engine.utils.helpers import CustomJSONEncoder
+from dotenv import load_dotenv, find_dotenv
 
-router = APIRouter()
+load_dotenv(find_dotenv())
+router = APIRouter(tags=["Agentic CFO Copilot"])
 
 # --- NEW INTEGRATION: Agent and Memory Instances ---
 SYSTEM_PROMPT = """
 You are the Agentic CFO Copilot, an expert AI financial analyst. Your persona is that of a "Finance Guardian" and "Financial Storyteller". Your tone is always professional, data-driven, and trustworthy. You must answer questions based *only* on the context provided. Do not invent information. If the answer isn't in the data, say so.
 """
 cfo_agent = Agent(system_prompt=SYSTEM_PROMPT)
-agent_memory = ConversationalMemory()
+agent_memory = ConversationalMemory(
+    host=os.getenv("REDIS_HOST", "localhost"),
+    port=int(os.getenv("REDIS_PORT", 6379))
+)
+
 # ---
 
 # This function is correct and remains unchanged.
@@ -61,8 +68,29 @@ def process_uploaded_file(file: UploadFile):
 # This endpoint is UNTOUCHED. It works perfectly.
 @router.post("/full_report")
 async def get_full_financial_report(
-    file: UploadFile = File(...), mode: str = Form("finance_guardian"), forecast_metric: str = Form("revenue")
+    file: UploadFile = File(
+        ...,
+        description="The financial data in CSV format. The system will autonomously parse any column schema."
+    ), 
+    mode: str = Form(
+        "finance_guardian",
+        description="The persona for the agent's narrative generation. Use 'finance_guardian' for internal operational insights, or 'financial_storyteller' for external stakeholder narratives."
+    ), 
+    forecast_metric: str = Form(
+        "revenue",
+        description="The primary financial metric you want to forecast and analyze for anomalies (e.g., 'revenue', 'expenses', 'cashflow')."
+    )
 ):
+    """
+    **One-Shot Analysis Endpoint**
+    
+    This is a powerful endpoint that runs the entire AIML pipeline on a given CSV and returns a complete, structured dashboard report.
+    It does not have conversational memory. Use this for generating static reports or initial dashboard loads.
+    
+    - **Upload a CSV**: The agent will clean it, validate it, and normalize it.
+    - **Receive a full report**: Includes KPIs, a 3-month forecast, detected anomalies, correlation insights, and narrative summaries.
+    - **Choose a persona**: Select `finance_guardian` or `financial_storyteller` to tailor the narrative output.
+    """
     processing_results = process_uploaded_file(file)
     featured_df = processing_results["featured_df"]
     forecasting_module = ForecastingModule(metric=forecast_metric)
@@ -89,8 +117,27 @@ async def get_full_financial_report(
 # This endpoint is UNTOUCHED. It works perfectly.
 @router.post("/simulate")
 async def simulate_scenario_endpoint(
-    file: UploadFile = File(...), parameter: str = Form(...), change_pct: float = Form(...)
+    file: UploadFile = File(
+        ..., 
+        description="The financial data in CSV format to use as the baseline for the simulation."
+    ),
+    parameter: str = Form(
+        ..., 
+        description="The financial metric you want to change (e.g., 'expenses', 'revenue')."
+    ),
+    change_pct: float = Form(
+        ..., 
+        description="The percentage to change the parameter by. Use positive numbers for increase (e.g., 10 for +10%) and negative for decrease (e.g., -5 for -5%)."
+    )
 ):
+    """
+    **"What-If" Scenario Engine**
+    
+    This endpoint allows you to test hypothetical scenarios and see their projected impact on key financial metrics.
+    
+    - **Example**: See what happens to `profit` and `cashflow` if your `expenses` go up by `15%`.
+    - **Returns**: A detailed report comparing the baseline metrics to the simulated results.
+    """
     processing_results = process_uploaded_file(file)
     featured_df = processing_results["featured_df"]
     simulation_module = ScenarioSimulationEngine()
@@ -104,10 +151,31 @@ async def simulate_scenario_endpoint(
 # This new endpoint applies the same proven manual serialization fix.
 @router.post("/agent/analyze_and_respond")
 async def agent_analyze_and_respond(
-    file: UploadFile = File(...),
-    user_query: str = Form(...),
-    session_id: Optional[str] = Form(None)
+    file: UploadFile = File(
+        ..., 
+        description="The financial data in CSV format that provides the context for the conversation."
+    ),
+    user_query: str = Form(
+        ..., 
+        description="The user's natural language question about the financial data (e.g., 'What's our biggest risk?')."
+    ),
+    session_id: Optional[str] = Form(
+        None, 
+        description="**Crucial for conversation.** Leave blank for the first question. For all follow-up questions, provide the `session_id` returned by the previous response."
+    )
 ):
+    """
+    **Primary Conversational Endpoint (Production-Ready)**
+    
+    This is the main entry point for interacting with the AI agent. It performs a full analysis and then uses a Large Language Model (LLM) to generate a human-like response to your specific query based on the data.
+    
+    - **Stateful Interaction**: It uses a `session_id` to remember the context of your conversation, allowing for intelligent follow-up questions.
+    - **How it works**:
+        1. On your **first request**, leave `session_id` blank. The agent will analyze the data, answer your query, and return a new `session_id`.
+        2. Your application must **save this `session_id`**.
+        3. On your **second and subsequent requests**, you must re-upload the file and provide the saved `session_id` to continue the conversation.
+    - **Returns**: A comprehensive JSON object containing the `ai_response`, the full structured `full_analysis_report` (for building charts/tables), the `session_id`, and the `conversation_history`.
+    """
     if not session_id:
         session_id = str(uuid.uuid4())
 

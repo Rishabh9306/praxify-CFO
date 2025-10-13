@@ -48,22 +48,18 @@ class Agent:
 
         Here is the relevant financial data context for the query:
         
-        Key KPIs:
-        {data_context.get('kpis')}
-
-        Forecast Summary:
-        {data_context.get('forecast_chart')}
-
-        Anomalies Detected:
-        {data_context.get('anomalies_table')}
-
-        Key Profit Drivers:
-        {data_context.get('profit_drivers')}
-
-        Narrative Summary:
-        {data_context.get('narratives')}
+        Key KPIs: {data_context.get('kpis')}
+        Forecast Summary: {data_context.get('forecast_chart')}
+        Anomalies Detected: {data_context.get('anomalies_table')}
+        Key Profit Drivers: {data_context.get('profit_drivers')}
+        Narrative Summary: {data_context.get('narratives')}
 
         Based on the User Query and the provided data context, generate a concise, professional, and helpful response.
+        
+        --- FINAL INSTRUCTION ---
+        If the user asks for a recommendation, you are allowed to synthesize a new, actionable recommendation based on the KPIs and Profit Drivers, even if it is not listed in the "Narrative Summary" recommendations.
+        --- END OF INSTRUCTION ---
+        
         If the query cannot be answered by the data, state that clearly.
         Do not make up information. Base your answer strictly on the provided context.
         """

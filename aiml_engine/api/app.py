@@ -8,7 +8,7 @@ app = FastAPI(
 )
 
 # Include the API router from the endpoints file
-app.include_router(api_router, prefix="/api", tags=["AIML Core"])
+app.include_router(api_router, prefix="/api")
 
 @app.get("/", tags=["Root"])
 def read_root():
