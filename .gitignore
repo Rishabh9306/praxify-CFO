@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+error-build.txt
 # Distribution / packaging
 build/
 dist/
