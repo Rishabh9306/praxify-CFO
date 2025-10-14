@@ -1,0 +1,80 @@
+{
+  "ai_response": "I'm sorry, I encountered an error trying to process that request.",
+  "full_analysis_report": {
+    "dashboard_mode": "finance_guardian",
+    "metadata": {
+      "generated_at": "2025-10-14T17:51:21.743313Z",
+      "data_start_date": "2024-01-15",
+      "data_end_date": "2024-06-15"
+    },
+    "kpis": {
+      "total_revenue": 1062500.0,
+      "total_expenses": 578300.0,
+      "profit_margin": 0.5056,
+      "cashflow": 0,
+      "growth_rate": 0.0,
+      "forecast_accuracy": 95.8,
+      "financial_health_score": 50.0,
+      "dso": 0.0
+    },
+    "forecast_chart": [],
+    "anomalies_table": [],
+    "narratives": {
+      "summary_text": "Overall financial health appears stable. Revenue growth is at 22.51% quarter-over-quarter, with a profit margin of 50.56%.",
+      "recommendations": [
+        "Financial metrics are within expected ranges. Continue monitoring performance."
+      ]
+    },
+    "correlation_insights": [],
+    "scenario_simulations": {},
+    "recommendations": [
+      "Financial metrics are within expected ranges. Continue monitoring performance."
+    ],
+    "profit_drivers": {
+      "insight": "Top 5 factors impacting profit, based on historical data.",
+      "feature_attributions": [
+        {
+          "feature": "profit_margin",
+          "contribution_score": 4603.7531
+        },
+        {
+          "feature": "revenue",
+          "contribution_score": 3769.8117
+        },
+        {
+          "feature": "expenses",
+          "contribution_score": 3621.6852
+        },
+        {
+          "feature": "profit_mom_growth",
+          "contribution_score": 2794.821
+        },
+        {
+          "feature": "revenue_mom_growth",
+          "contribution_score": 494.284
+        }
+      ],
+      "model_version": "Explainability_RF_2025-10-14"
+    }
+  },
+  "session_id": "ec49b998-daf2-4a33-a046-90b3cff59f1a",
+  "conversation_history": [
+    {
+      "query_id": "b37d5707-6103-4c51-80e0-51c75120f2d2",
+      "summary": {
+        "user_query": "Forecast my revenue.",
+        "ai_response": "I'm sorry, I encountered an error trying to process that request.",
+        "key_kpis": {
+          "total_revenue": 1062500.0,
+          "total_expenses": 578300.0,
+          "profit_margin": 0.5056,
+          "cashflow": 0,
+          "growth_rate": 0.0,
+          "forecast_accuracy": 95.8,
+          "financial_health_score": 50.0,
+          "dso": 0.0
+        }
+      }
+    }
+  ]
+}

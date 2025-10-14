@@ -1,0 +1,21 @@
+{
+  "scenario": {
+    "parameter_changed": "expenses",
+    "change_percentage": -10.0
+  },
+  "baseline": {
+    "total_profit": 1223200,
+    "total_cashflow": 1059000.0
+  },
+  "simulation_results": {
+    "total_profit": 1972030.0,
+    "total_cashflow": 1707308.5104643556
+  },
+  "impact": {
+    "profit_impact_absolute": 748830.0,
+    "profit_impact_percentage": 61.21893394375408,
+    "cashflow_impact_absolute": 648308.5104643556,
+    "cashflow_impact_percentage": 61.218933943754074
+  },
+  "summary_text": "A -10.0% change in 'expenses' is projected to change total profit by 748,830.00 (61.22%) and total cashflow by 648,308.51 (61.22%)."
+}

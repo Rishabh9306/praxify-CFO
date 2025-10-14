@@ -1,0 +1,322 @@
+{
+  "dashboard_mode": "finance_guardian",
+  "metadata": {
+    "generated_at": "2025-10-14T17:53:35.119986Z",
+    "data_start_date": "2023-01-31",
+    "data_end_date": "2024-12-31"
+  },
+  "kpis": {
+    "total_revenue": 3932500,
+    "total_expenses": 2178300.0,
+    "profit_margin": 0.31104895104895103,
+    "cashflow": 1059000.0,
+    "growth_rate": 4.551365409622887,
+    "forecast_accuracy": 95.8,
+    "financial_health_score": 48.36,
+    "dso": 10.74989785013866
+  },
+  "forecast_chart": [
+    {
+      "date": "2025-01-01",
+      "predicted": 27128.97113535411,
+      "lower": 27042.20023646489,
+      "upper": 27218.453532570256
+    },
+    {
+      "date": "2025-02-01",
+      "predicted": 21243.419928357238,
+      "lower": 20960.947200792827,
+      "upper": 21528.699008598
+    },
+    {
+      "date": "2025-03-01",
+      "predicted": 46852.6987978829,
+      "lower": 46294.51681766041,
+      "upper": 47387.16754406505
+    }
+  ],
+  "anomalies_table": [],
+  "narratives": {
+    "summary_text": "Overall financial health appears stable. Revenue growth is at 81.22% quarter-over-quarter, with a profit margin of 31.10%.",
+    "recommendations": [
+      "Financial metrics are within expected ranges. Continue monitoring performance."
+    ]
+  },
+  "correlation_insights": [
+    {
+      "metric_a": "revenue",
+      "metric_b": "profit",
+      "correlation": 0.9934990172727183
+    },
+    {
+      "metric_a": "profit",
+      "metric_b": "cashflow",
+      "correlation": 0.9924002476771617
+    },
+    {
+      "metric_a": "revenue",
+      "metric_b": "expenses",
+      "correlation": 0.9899133295587473
+    },
+    {
+      "metric_a": "revenue",
+      "metric_b": "cashflow",
+      "correlation": 0.9894818543016564
+    },
+    {
+      "metric_a": "expenses",
+      "metric_b": "profit",
+      "correlation": 0.9832364887533315
+    },
+    {
+      "metric_a": "expenses",
+      "metric_b": "cashflow",
+      "correlation": 0.981510748229718
+    }
+  ],
+  "scenario_simulations": {},
+  "recommendations": [
+    "Financial metrics are within expected ranges. Continue monitoring performance."
+  ],
+  "supporting_reports": {
+    "validation_report": {
+      "dataset_id": "ds_1760464400",
+      "original_shape": [
+        24,
+        12
+      ],
+      "cleaned_shape": [
+        24,
+        12
+      ],
+      "missing_values_imputed": true,
+      "imputed_columns_summary": {
+        "expenses": 1,
+        "cashflow": 1
+      },
+      "header_mappings": {
+        "Transaction Date": "date",
+        "Sales Revenue": "revenue",
+        "Operating Costs": "expenses",
+        "Region": "region",
+        "Department": "department",
+        "Net Profit": "profit",
+        "Cash Flow from Operations": "cashflow",
+        "Accounts Receivable": "ar",
+        "Accounts Payable": "ap",
+        "Total Assets": "assets",
+        "Total Liabilities": "liabilities"
+      }
+    },
+    "corrections_log": [
+      {
+        "row_id": 9,
+        "column": "expenses",
+        "original": "N/A",
+        "correction": 92000.0,
+        "method": "median_impute",
+        "timestamp": "2025-10-14T17:53:20.052380Z"
+      },
+      {
+        "row_id": 4,
+        "column": "cashflow",
+        "original": "N/A",
+        "correction": 46000.0,
+        "method": "median_impute",
+        "timestamp": "2025-10-14T17:53:20.053039Z"
+      }
+    ],
+    "feature_schema": [
+      {
+        "feature": "profit_margin",
+        "type": "float64",
+        "source": [
+          "profit",
+          "revenue"
+        ],
+        "transformation": "profit / revenue"
+      },
+      {
+        "feature": "debt_to_asset_ratio",
+        "type": "float64",
+        "source": [
+          "liabilities",
+          "assets"
+        ],
+        "transformation": "liabilities / assets"
+      },
+      {
+        "feature": "dso",
+        "type": "float64",
+        "source": [
+          "ar",
+          "revenue",
+          "date"
+        ],
+        "transformation": "(accounts_receivable / revenue) * days_in_period"
+      },
+      {
+        "feature": "revenue_mom_growth",
+        "type": "float64",
+        "source": [
+          "revenue"
+        ],
+        "transformation": "pandas.pct_change()"
+      },
+      {
+        "feature": "profit_mom_growth",
+        "type": "float64",
+        "source": [
+          "profit"
+        ],
+        "transformation": "pandas.pct_change()"
+      },
+      {
+        "feature": "expenses_mom_growth",
+        "type": "float64",
+        "source": [
+          "expenses"
+        ],
+        "transformation": "pandas.pct_change()"
+      }
+    ]
+  },
+  "model_health_report": {
+    "model_id": "model_prophet_1760464415",
+    "best_model_selected": "Prophet",
+    "backtesting_rmse": {
+      "AutoARIMA": "N/A",
+      "Prophet": 30294.742005817025
+    },
+    "forecast_metric": "profit",
+    "status": "Success"
+  },
+  "raw_data_preview": [
+    {
+      "date": "2023-01-31T00:00:00.000",
+      "revenue": 120500,
+      "expenses": 75300.0,
+      "profit": 30200,
+      "cashflow": 25000.0,
+      "liabilities": 280000,
+      "assets": 550000,
+      "ar": 45000,
+      "ap": 22000,
+      "region": "NAM",
+      "department": "Sales",
+      "Marketing Spend": 15000.0,
+      "profit_margin": 0.2506224066,
+      "debt_to_asset_ratio": 0.5090909091,
+      "dso": 11.5767634855,
+      "revenue_mom_growth": 0.0,
+      "profit_mom_growth": 0.0,
+      "expenses_mom_growth": 0.0
+    },
+    {
+      "date": "2023-02-28T00:00:00.000",
+      "revenue": 115000,
+      "expenses": 72000.0,
+      "profit": 28500,
+      "cashflow": 23000.0,
+      "liabilities": 281000,
+      "assets": 552000,
+      "ar": 43000,
+      "ap": 21000,
+      "region": "NAM",
+      "department": "Marketing",
+      "Marketing Spend": 14500.0,
+      "profit_margin": 0.247826087,
+      "debt_to_asset_ratio": 0.509057971,
+      "dso": 10.4695652174,
+      "revenue_mom_growth": -4.5643153527,
+      "profit_mom_growth": -5.6291390728,
+      "expenses_mom_growth": -4.3824701195
+    },
+    {
+      "date": "2023-03-31T00:00:00.000",
+      "revenue": 135000,
+      "expenses": 80000.0,
+      "profit": 39000,
+      "cashflow": 32000.0,
+      "liabilities": 285000,
+      "assets": 560000,
+      "ar": 48000,
+      "ap": 24000,
+      "region": "APAC",
+      "department": "Sales",
+      "Marketing Spend": 16000.0,
+      "profit_margin": 0.2888888889,
+      "debt_to_asset_ratio": 0.5089285714,
+      "dso": 11.0222222222,
+      "revenue_mom_growth": 17.3913043478,
+      "profit_mom_growth": 36.8421052632,
+      "expenses_mom_growth": 11.1111111111
+    },
+    {
+      "date": "2023-04-30T00:00:00.000",
+      "revenue": 145000,
+      "expenses": 85000.0,
+      "profit": 43000,
+      "cashflow": 35000.0,
+      "liabilities": 288000,
+      "assets": 565000,
+      "ar": 52000,
+      "ap": 26000,
+      "region": "APAC",
+      "department": "Operations",
+      "Marketing Spend": 17000.0,
+      "profit_margin": 0.2965517241,
+      "debt_to_asset_ratio": 0.5097345133,
+      "dso": 10.7586206897,
+      "revenue_mom_growth": 7.4074074074,
+      "profit_mom_growth": 10.2564102564,
+      "expenses_mom_growth": 6.25
+    },
+    {
+      "date": "2023-05-31T00:00:00.000",
+      "revenue": 152000,
+      "expenses": 88000.0,
+      "profit": 46000,
+      "cashflow": 46000.0,
+      "liabilities": 290000,
+      "assets": 570000,
+      "ar": 55000,
+      "ap": 27000,
+      "region": "EMEA",
+      "department": "Sales",
+      "Marketing Spend": 18000.0,
+      "profit_margin": 0.3026315789,
+      "debt_to_asset_ratio": 0.5087719298,
+      "dso": 11.2171052632,
+      "revenue_mom_growth": 4.8275862069,
+      "profit_mom_growth": 6.976744186,
+      "expenses_mom_growth": 3.5294117647
+    }
+  ],
+  "profit_drivers": {
+    "insight": "Top 5 factors impacting profit, based on historical data.",
+    "feature_attributions": [
+      {
+        "feature": "revenue",
+        "contribution_score": 1836.2893
+      },
+      {
+        "feature": "cashflow",
+        "contribution_score": 1441.6587
+      },
+      {
+        "feature": "ap",
+        "contribution_score": 1421.4751
+      },
+      {
+        "feature": "ar",
+        "contribution_score": 1365.7196
+      },
+      {
+        "feature": "Marketing Spend",
+        "contribution_score": 953.8741
+      }
+    ],
+    "model_version": "Explainability_RF_2025-10-14"
+  }
+}

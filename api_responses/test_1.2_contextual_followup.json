@@ -1,0 +1,116 @@
+{
+  "ai_response": "I'm sorry, I encountered an error trying to process that request.",
+  "full_analysis_report": {
+    "dashboard_mode": "finance_guardian",
+    "metadata": {
+      "generated_at": "2025-10-14T17:51:08.353255Z",
+      "data_start_date": "2023-01-31",
+      "data_end_date": "2024-12-31"
+    },
+    "kpis": {
+      "total_revenue": 3932500,
+      "total_expenses": 2178300.0,
+      "profit_margin": 0.31104895104895103,
+      "cashflow": 1059000.0,
+      "growth_rate": 4.551365409622887,
+      "forecast_accuracy": 95.8,
+      "financial_health_score": 48.36,
+      "dso": 10.74989785013866
+    },
+    "forecast_chart": [
+      {
+        "date": "2025-01-01",
+        "predicted": 82896.82788762587,
+        "lower": 82387.45786349567,
+        "upper": 83344.62147847938
+      },
+      {
+        "date": "2025-02-01",
+        "predicted": 64132.757016956195,
+        "lower": 62507.59844127154,
+        "upper": 65587.66626870955
+      },
+      {
+        "date": "2025-03-01",
+        "predicted": 137855.1833370115,
+        "lower": 134633.75233180448,
+        "upper": 140664.14390953621
+      }
+    ],
+    "anomalies_table": [],
+    "narratives": {
+      "summary_text": "Overall financial health appears stable. Revenue growth is at 81.22% quarter-over-quarter, with a profit margin of 31.10%.",
+      "recommendations": [
+        "Financial metrics are within expected ranges. Continue monitoring performance."
+      ]
+    },
+    "correlation_insights": [],
+    "scenario_simulations": {},
+    "recommendations": [
+      "Financial metrics are within expected ranges. Continue monitoring performance."
+    ],
+    "profit_drivers": {
+      "insight": "Top 5 factors impacting profit, based on historical data.",
+      "feature_attributions": [
+        {
+          "feature": "revenue",
+          "contribution_score": 1836.2893
+        },
+        {
+          "feature": "cashflow",
+          "contribution_score": 1441.6587
+        },
+        {
+          "feature": "ap",
+          "contribution_score": 1421.4751
+        },
+        {
+          "feature": "ar",
+          "contribution_score": 1365.7196
+        },
+        {
+          "feature": "Marketing Spend",
+          "contribution_score": 953.8741
+        }
+      ],
+      "model_version": "Explainability_RF_2025-10-14"
+    }
+  },
+  "session_id": "279006d3-72c0-46d9-8e96-e9dcb6ed10fd",
+  "conversation_history": [
+    {
+      "query_id": "b671fa38-7670-476c-99a5-c1bc40c4ae16",
+      "summary": {
+        "user_query": "Give me a complete financial summary.",
+        "ai_response": "I'm sorry, I encountered an error trying to process that request.",
+        "key_kpis": {
+          "total_revenue": 3932500,
+          "total_expenses": 2178300.0,
+          "profit_margin": 0.31104895104895103,
+          "cashflow": 1059000.0,
+          "growth_rate": 4.551365409622887,
+          "forecast_accuracy": 95.8,
+          "financial_health_score": 48.36,
+          "dso": 10.74989785013866
+        }
+      }
+    },
+    {
+      "query_id": "9c967b05-33e3-41d9-ba33-ae18552eb597",
+      "summary": {
+        "user_query": "Based on that forecast, what do you recommend?",
+        "ai_response": "I'm sorry, I encountered an error trying to process that request.",
+        "key_kpis": {
+          "total_revenue": 3932500,
+          "total_expenses": 2178300.0,
+          "profit_margin": 0.31104895104895103,
+          "cashflow": 1059000.0,
+          "growth_rate": 4.551365409622887,
+          "forecast_accuracy": 95.8,
+          "financial_health_score": 48.36,
+          "dso": 10.74989785013866
+        }
+      }
+    }
+  ]
+}

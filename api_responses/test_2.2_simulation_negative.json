@@ -1,0 +1,21 @@
+{
+  "scenario": {
+    "parameter_changed": "revenue",
+    "change_percentage": -15.0
+  },
+  "baseline": {
+    "total_profit": 1223200,
+    "total_cashflow": 1059000.0
+  },
+  "simulation_results": {
+    "total_profit": 1164325.0,
+    "total_cashflow": 1008028.2660235446
+  },
+  "impact": {
+    "profit_impact_absolute": -58875.0,
+    "profit_impact_percentage": -4.813194898626554,
+    "cashflow_impact_absolute": -50971.733976455405,
+    "cashflow_impact_percentage": -4.813194898626573
+  },
+  "summary_text": "A -15.0% change in 'revenue' is projected to change total profit by -58,875.00 (-4.81%) and total cashflow by -50,971.73 (-4.81%)."
+}
