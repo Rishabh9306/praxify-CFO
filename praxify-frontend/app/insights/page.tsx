@@ -34,7 +34,7 @@ export default function InsightsPage() {
       formData.append('forecast_metric', uploadConfig.forecast_metric);
       formData.append('user_query', 'Give me a comprehensive summary of this financial data');
 
-      const response = await fetch('/api/agent/analyze_and_respond', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/agent/analyze_and_respond`, {
         method: 'POST',
         body: formData,
       });
@@ -67,16 +67,17 @@ export default function InsightsPage() {
     return null;
   }
 
-  const forecastData = fullReportData.forecast_chart?.dates.map((date, i) => ({
-    date,
-    actual: fullReportData.forecast_chart.actual[i],
-    forecast: fullReportData.forecast_chart.forecast[i],
+  // Backend returns forecast_chart as array of {date, predicted, lower, upper}
+  const forecastData = fullReportData.forecast_chart?.map((item: any) => ({
+    date: item.date,
+    forecast: item.predicted,
+    lower: item.lower,
+    upper: item.upper,
   })) || [];
 
-  const profitDriverData = fullReportData.profit_drivers?.map((driver) => ({
-    category: driver.category,
-    impact: driver.impact,
-    percentage: driver.percentage,
+  const profitDriverData = fullReportData.profit_drivers?.feature_attributions?.map((driver) => ({
+    category: driver.feature,
+    impact: driver.contribution_score,
   })) || [];
 
   return (
@@ -190,7 +191,7 @@ export default function InsightsPage() {
           )}
 
           {/* Anomalies */}
-          {fullReportData.anomalies && fullReportData.anomalies.length > 0 && (
+          {fullReportData.anomalies_table && fullReportData.anomalies_table.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -201,7 +202,7 @@ export default function InsightsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                  {fullReportData.anomalies.map((anomaly, idx) => (
+                  {fullReportData.anomalies_table.map((anomaly, idx) => (
                     <div key={idx} className="p-3 border rounded-lg">
                       <div className="flex justify-between items-start mb-1">
                         <p className="font-semibold">{anomaly.metric}</p>
@@ -226,50 +227,71 @@ export default function InsightsPage() {
         </div>
 
         {/* Narratives */}
-        {fullReportData.narratives && fullReportData.narratives.length > 0 && (
+        {fullReportData.narratives && (
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle>AI-Generated Narratives</CardTitle>
-              <CardDescription>Contextual insights and interpretations</CardDescription>
+              <CardTitle>AI-Generated Insights</CardTitle>
+              <CardDescription>Contextual insights and recommendations</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {fullReportData.narratives.map((narrative, idx) => (
-                  <div key={idx} className="prose prose-invert max-w-none">
-                    <h3 className="text-lg font-semibold mb-2">{narrative.title}</h3>
-                    <p className="text-muted-foreground whitespace-pre-wrap">{narrative.content}</p>
+                {/* Handle financial_storyteller format (narrative field) */}
+                {'narrative' in fullReportData.narratives && (
+                  <div className="prose prose-invert max-w-none">
+                    <h3 className="text-lg font-semibold mb-2">Financial Narrative</h3>
+                    <p className="text-muted-foreground whitespace-pre-wrap">{fullReportData.narratives.narrative}</p>
                   </div>
-                ))}
+                )}
+                
+                {/* Handle finance_guardian format (summary_text + recommendations) */}
+                {'summary_text' in fullReportData.narratives && (
+                  <>
+                    <div className="prose prose-invert max-w-none">
+                      <h3 className="text-lg font-semibold mb-2">Summary</h3>
+                      <p className="text-muted-foreground whitespace-pre-wrap">{fullReportData.narratives.summary_text}</p>
+                    </div>
+                    {fullReportData.narratives.recommendations && fullReportData.narratives.recommendations.length > 0 && (
+                      <div className="prose prose-invert max-w-none">
+                        <h3 className="text-lg font-semibold mb-2">Recommendations</h3>
+                        <ul className="list-disc list-inside space-y-1">
+                          {fullReportData.narratives.recommendations.map((rec, idx) => (
+                            <li key={idx} className="text-muted-foreground">{rec}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
         )}
 
         {/* Raw Data Preview */}
-        {fullReportData.raw_data_preview && (
+        {fullReportData.raw_data_preview && fullReportData.raw_data_preview.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle>Data Preview</CardTitle>
-              <CardDescription>Sample of uploaded financial data</CardDescription>
+              <CardDescription>Sample of uploaded financial data (first 5 rows)</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      {fullReportData.raw_data_preview.columns.map((col, idx) => (
-                        <th key={idx} className="text-left p-2 font-semibold">
+                      {Object.keys(fullReportData.raw_data_preview[0] || {}).map((col, idx) => (
+                        <th key={idx} className="text-left p-2 font-semibold text-xs">
                           {col}
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {fullReportData.raw_data_preview.rows.slice(0, 10).map((row, idx) => (
-                      <tr key={idx} className="border-b">
-                        {fullReportData.raw_data_preview!.columns.map((col, colIdx) => (
-                          <td key={colIdx} className="p-2 text-muted-foreground">
-                            {row[col]?.toString() || '-'}
+                    {fullReportData.raw_data_preview.slice(0, 5).map((row, idx) => (
+                      <tr key={idx} className="border-b hover:bg-muted/50">
+                        {Object.values(row).map((value, colIdx) => (
+                          <td key={colIdx} className="p-2 text-muted-foreground text-xs">
+                            {typeof value === 'number' ? value.toFixed(2) : (value?.toString() || '-')}
                           </td>
                         ))}
                       </tr>

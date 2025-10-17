@@ -32,4 +32,12 @@ htmlcov/
 *.log
 *.tmp
 temp_upload.csv
+temp_api_upload.csv
 dashboard_output.json
+
+# Environment files (CRITICAL - Never commit these!)
+.env
+.env.local
+.env.*.local
+praxify-frontend/.env.local
+praxify-frontend/.env.production

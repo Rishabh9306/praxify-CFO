@@ -72,7 +72,7 @@ async def get_full_financial_report(
         ...,
         description="The financial data in CSV format. The system will autonomously parse any column schema."
     ), 
-    mode: str = Form(
+    persona: str = Form(
         "finance_guardian",
         description="The persona for the agent's narrative generation. Use 'finance_guardian' for internal operational insights, or 'financial_storyteller' for external stakeholder narratives."
     ), 
@@ -103,7 +103,7 @@ async def get_full_financial_report(
     profit_drivers = explainer_module.get_profit_drivers(featured_df)
     dashboard_module = BusinessDashboardOutputLayer()
     dashboard_output = dashboard_module.generate_dashboard(
-        featured_df=featured_df, forecast=forecast, anomalies=anomalies, mode=mode, correlation_report=correlation_report
+        featured_df=featured_df, forecast=forecast, anomalies=anomalies, mode=persona, correlation_report=correlation_report
     )
     dashboard_output["supporting_reports"] = processing_results["reports"]
     dashboard_output["model_health_report"] = model_health
@@ -125,7 +125,7 @@ async def simulate_scenario_endpoint(
         ..., 
         description="The financial metric you want to change (e.g., 'expenses', 'revenue')."
     ),
-    change_pct: float = Form(
+    change_percent: float = Form(
         ..., 
         description="The percentage to change the parameter by. Use positive numbers for increase (e.g., 10 for +10%) and negative for decrease (e.g., -5 for -5%)."
     )
@@ -141,7 +141,7 @@ async def simulate_scenario_endpoint(
     processing_results = process_uploaded_file(file)
     featured_df = processing_results["featured_df"]
     simulation_module = ScenarioSimulationEngine()
-    simulation_report = simulation_module.simulate_scenario(df=featured_df, parameter=parameter, change_pct=change_pct)
+    simulation_report = simulation_module.simulate_scenario(df=featured_df, parameter=parameter, change_pct=change_percent)
     
     # Use the proven manual serialization method
     json_string = json.dumps(simulation_report, cls=CustomJSONEncoder)
@@ -208,7 +208,8 @@ async def agent_analyze_and_respond(
     
     # Assemble the final response dictionary
     final_response_data = {
-        "ai_response": ai_response_text,
+        "response": ai_response_text,  # Frontend expects this field
+        "ai_response": ai_response_text,  # Keep for backward compatibility
         "full_analysis_report": full_analysis,
         "session_id": session_id,
         "conversation_history": history

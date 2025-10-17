@@ -66,7 +66,7 @@ export default function UploadPage() {
       formData.append('persona', persona);
       formData.append('forecast_metric', metric);
 
-      const response = await fetch('/api/full_report', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/full_report`, {
         method: 'POST',
         body: formData,
       });
@@ -105,7 +105,7 @@ export default function UploadPage() {
       formData.append('forecast_metric', metric);
       formData.append('user_query', 'Give me a comprehensive summary of this financial data');
 
-      const response = await fetch('/api/agent/analyze_and_respond', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/agent/analyze_and_respond`, {
         method: 'POST',
         body: formData,
       });

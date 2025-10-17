@@ -451,7 +451,7 @@ async function generateReport(file: File) {
   formData.append('persona', 'finance_guardian');
   formData.append('forecast_metric', 'revenue');
 
-  const response = await fetch('/api/full_report', {
+  const response = await fetch(\`\${process.env.NEXT_PUBLIC_API_URL}/api/full_report\`, {
     method: 'POST',
     body: formData,
   });
@@ -473,7 +473,7 @@ async function startChat(file: File, query: string) {
   formData.append('user_query', query);
   formData.append('session_id', ''); // Empty for first query
 
-  const response = await fetch('/api/agent/analyze_and_respond', {
+  const response = await fetch(\`\${process.env.NEXT_PUBLIC_API_URL}/api/agent/analyze_and_respond\`, {
     method: 'POST',
     body: formData,
   });
@@ -494,9 +494,9 @@ async function simulate(file: File, parameter: string, change: number) {
   formData.append('persona', 'finance_guardian');
   formData.append('forecast_metric', 'revenue');
   formData.append('parameter', parameter); // e.g., 'expenses'
-  formData.append('change_pct', change.toString()); // e.g., -10
+  formData.append('change_percent', change.toString()); // Updated parameter name
 
-  const response = await fetch('/api/simulate', {
+  const response = await fetch(\`\${process.env.NEXT_PUBLIC_API_URL}/api/simulate\`, {
     method: 'POST',
     body: formData,
   });

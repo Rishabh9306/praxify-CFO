@@ -85,7 +85,7 @@ export default function SimulatePage() {
       formData.append('parameter', parameter);
       formData.append('change_percent', change.toString());
 
-      const response = await fetch('/api/simulate', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/simulate`, {
         method: 'POST',
         body: formData,
       });

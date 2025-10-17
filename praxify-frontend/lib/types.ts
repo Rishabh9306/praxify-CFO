@@ -9,9 +9,10 @@ export interface KPIData {
 }
 
 export interface ForecastChart {
-  dates: string[];
-  actual: number[];
-  forecast: number[];
+  date: string;
+  predicted: number;
+  lower: number;
+  upper: number;
 }
 
 export interface Anomaly {
@@ -23,29 +24,33 @@ export interface Anomaly {
   severity: string;
 }
 
+export interface ProfitDriverFeature {
+  feature: string;
+  contribution_score: number;
+}
+
 export interface ProfitDriver {
-  category: string;
-  impact: number;
-  percentage: number;
+  insight: string;
+  feature_attributions: ProfitDriverFeature[];
+  model_version: string;
 }
 
-export interface Narrative {
-  title: string;
-  content: string;
-  tone?: string;
-}
+// Narratives can be in two formats depending on persona:
+// finance_guardian: {summary_text, recommendations}
+// financial_storyteller: {narrative}
+export type Narrative = 
+  | { summary_text: string; recommendations: string[] }
+  | { narrative: string };
 
-export interface RawDataPreview {
-  columns: string[];
-  rows: Array<Record<string, any>>;
-}
+// Backend returns raw_data_preview as array of record objects
+export type RawDataPreview = Array<Record<string, any>>;
 
 export interface FullReportResponse {
   kpis: KPIData;
-  forecast_chart: ForecastChart;
-  anomalies: Anomaly[];
-  profit_drivers: ProfitDriver[];
-  narratives: Narrative[];
+  forecast_chart: ForecastChart[];  // Array of forecast points
+  anomalies_table: Anomaly[];  // Backend uses anomalies_table
+  profit_drivers: ProfitDriver;  // Single object with feature_attributions array
+  narratives: Narrative;  // Single object with summary_text and recommendations
   raw_data_preview?: RawDataPreview;
   timestamp?: string;
 }

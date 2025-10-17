@@ -78,6 +78,16 @@ export default function AIAgentPage() {
   const handleSendMessage = async () => {
     if ((!input.trim() && !file) || isLoading) return;
 
+    // Check if we have a file (required for first message or if no session exists)
+    if (!file && !sessionActive) {
+      setMessages(prev => [...prev, {
+        role: 'system',
+        content: 'Please upload a CSV file first before asking questions.',
+        timestamp: new Date(),
+      }]);
+      return;
+    }
+
     const userMessage: Message = {
       role: 'user',
       content: input.trim() || 'Analyze this file',
@@ -91,15 +101,19 @@ export default function AIAgentPage() {
 
     try {
       const formData = new FormData();
+      // File is required - use current file or the one from the session
       if (file) {
         formData.append('file', file);
-        formData.append('mode', 'financial_storyteller');
-        formData.append('forecast_metric', 'revenue');
+      } else {
+        // This should not happen due to the check above, but adding for safety
+        throw new Error('File is required');
       }
       formData.append('user_query', userMessage.content);
-      formData.append('session_id', currentSessionId);
+      if (currentSessionId) {
+        formData.append('session_id', currentSessionId);
+      }
 
-      const response = await fetch('http://localhost:8000/api/agent/analyze_and_respond', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/agent/analyze_and_respond`, {
         method: 'POST',
         body: formData,
       });

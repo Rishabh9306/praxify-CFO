@@ -12,7 +12,12 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 export default function ChatPage() {
   const router = useRouter();
   const { agentData, uploadedFile, uploadConfig, sessionId, setAgentData, addToSessionHistory } = useAppContext();
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([
+    { 
+      role: 'assistant', 
+      content: 'Hello! I\'m your AI Financial Analyst. Ask me anything about the uploaded financial data.' 
+    }
+  ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -24,8 +29,17 @@ export default function ChatPage() {
     }
 
     // Initialize messages from conversation history
-    if (agentData.conversation_history) {
-      setMessages(agentData.conversation_history);
+    // Backend conversation_history format: [{query_id, summary: {user_query, ai_response, key_kpis}}]
+    // Convert to chat format: [{role, content}]
+    if (agentData.conversation_history && agentData.conversation_history.length > 0) {
+      const chatMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+      agentData.conversation_history.forEach((item: any) => {
+        if (item.summary) {
+          chatMessages.push({ role: 'user', content: item.summary.user_query });
+          chatMessages.push({ role: 'assistant', content: item.summary.ai_response });
+        }
+      });
+      setMessages(chatMessages);
     }
   }, [agentData, router]);
 
@@ -44,12 +58,12 @@ export default function ChatPage() {
     try {
       const formData = new FormData();
       formData.append('file', uploadedFile);
-      formData.append('persona', uploadConfig.persona);
-      formData.append('forecast_metric', uploadConfig.forecast_metric);
       formData.append('user_query', userMessage);
-      formData.append('session_id', sessionId);
+      if (sessionId) {
+        formData.append('session_id', sessionId);
+      }
 
-      const response = await fetch('/api/agent/analyze_and_respond', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/agent/analyze_and_respond`, {
         method: 'POST',
         body: formData,
       });
@@ -60,7 +74,10 @@ export default function ChatPage() {
 
       const data = await response.json();
       setAgentData(data);
-      setMessages(data.conversation_history || []);
+      
+      // Add the AI response to messages
+      const aiResponse = data.response || data.ai_response || 'No response received';
+      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
 
       // Update session history
       addToSessionHistory({
@@ -92,15 +109,17 @@ export default function ChatPage() {
     return null;
   }
 
-  const forecastData = agentData.full_analysis_report?.forecast_chart?.dates.map((date, i) => ({
-    date,
-    actual: agentData.full_analysis_report.forecast_chart.actual[i],
-    forecast: agentData.full_analysis_report.forecast_chart.forecast[i],
+  // Backend returns forecast_chart as array of {date, predicted, lower, upper}
+  const forecastData = agentData.full_analysis_report?.forecast_chart?.map((item: any) => ({
+    date: item.date,
+    forecast: item.predicted,
+    lower: item.lower,
+    upper: item.upper,
   })) || [];
 
-  const profitDriverData = agentData.full_analysis_report?.profit_drivers?.map((driver) => ({
-    category: driver.category,
-    impact: driver.impact,
+  const profitDriverData = agentData.full_analysis_report?.profit_drivers?.feature_attributions?.map((driver: any) => ({
+    category: driver.feature,
+    impact: driver.contribution_score,
   })) || [];
 
   return (
@@ -131,10 +150,12 @@ export default function ChatPage() {
                         className={`max-w-[80%] rounded-lg p-4 ${
                           message.role === 'user'
                             ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted'
+                            : 'bg-muted text-foreground'
                         }`}
                       >
-                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        <div className="flex items-start gap-2">
+                          <p className="text-sm whitespace-pre-wrap flex-1">{message.content}</p>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -244,8 +265,8 @@ export default function ChatPage() {
             )}
 
             {/* Anomalies */}
-            {agentData.full_analysis_report?.anomalies && 
-             agentData.full_analysis_report.anomalies.length > 0 && (
+            {agentData.full_analysis_report?.anomalies_table && 
+             agentData.full_analysis_report.anomalies_table.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -255,7 +276,7 @@ export default function ChatPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {agentData.full_analysis_report.anomalies.slice(0, 3).map((anomaly, idx) => (
+                    {agentData.full_analysis_report.anomalies_table.slice(0, 3).map((anomaly, idx) => (
                       <div key={idx} className="p-2 border rounded text-xs">
                         <div className="flex justify-between mb-1">
                           <span className="font-semibold">{anomaly.metric}</span>

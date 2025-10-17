@@ -93,10 +93,10 @@ export default function StaticReportPage() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('mode', persona);
+      formData.append('persona', persona);  // Fixed: was 'mode'
       formData.append('forecast_metric', metric);
 
-      const response = await fetch('http://localhost:8000/api/full_report', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/full_report`, {
         method: 'POST',
         body: formData,
       });

@@ -1,0 +1,13 @@
+{
+  "buildCommand": "pnpm build",
+  "devCommand": "pnpm dev",
+  "installCommand": "pnpm install",
+  "framework": "nextjs",
+  "outputDirectory": ".next",
+  "env": {
+    "NEXT_PUBLIC_API_URL": {
+      "description": "Backend API URL - Point this to your deployed FastAPI backend",
+      "value": "http://localhost:8000"
+    }
+  }
+}
