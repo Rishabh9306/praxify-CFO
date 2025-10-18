@@ -123,8 +123,8 @@ export default function ChatPage() {
   })) || [];
 
   return (
-    <div className="min-h-screen bg-background pt-32 pb-20">
-      <div className="container mx-auto px-4 h-[calc(100vh-200px)]">
+    <div className="min-h-screen bg-background pt-20 pb-20">
+      <div className="container max-w-7xl mx-auto px-4 h-full flex flex-col">
         <div className="mb-6">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">AI Financial Analyst Chat</h1>
           <p className="text-muted-foreground">
@@ -232,9 +232,9 @@ export default function ChatPage() {
                 <CardContent>
                   <ResponsiveContainer width="100%" height={200}>
                     <LineChart data={forecastData.slice(-10)}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="date" stroke="hsl(var(--foreground))" fontSize={10} />
-                      <YAxis stroke="hsl(var(--foreground))" fontSize={10} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                      <XAxis dataKey="date" stroke="var(--color-foreground)" fontSize={10} />
+                      <YAxis stroke="var(--color-foreground)" fontSize={10} />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: 'hsl(var(--background))',
@@ -246,14 +246,14 @@ export default function ChatPage() {
                       <Line
                         type="monotone"
                         dataKey="actual"
-                        stroke="hsl(var(--primary))"
+                        stroke="var(--color-primary)"
                         strokeWidth={2}
                         dot={false}
                       />
                       <Line
                         type="monotone"
                         dataKey="forecast"
-                        stroke="hsl(var(--muted-foreground))"
+                        stroke="var(--color-muted-foreground)"
                         strokeWidth={2}
                         strokeDasharray="5 5"
                         dot={false}
@@ -305,9 +305,9 @@ export default function ChatPage() {
                 <CardContent>
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={profitDriverData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="category" stroke="hsl(var(--foreground))" fontSize={10} />
-                      <YAxis stroke="hsl(var(--foreground))" fontSize={10} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                      <XAxis dataKey="category" stroke="var(--color-foreground)" fontSize={10} />
+                      <YAxis stroke="var(--color-foreground)" fontSize={10} />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: 'hsl(var(--background))',
@@ -316,7 +316,7 @@ export default function ChatPage() {
                           fontSize: '12px',
                         }}
                       />
-                      <Bar dataKey="impact" fill="hsl(var(--primary))" />
+                      <Bar dataKey="impact" fill="var(--color-primary)" />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>

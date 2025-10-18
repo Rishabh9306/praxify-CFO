@@ -70,8 +70,8 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pt-32 pb-20">
-      <div className="container max-w-6xl mx-auto px-4">
+    <div className="min-h-screen bg-background pt-20 pb-20">
+      <div className="container max-w-7xl mx-auto px-4">
         <div className="mb-12">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Session History & Reports</h1>
           <p className="text-muted-foreground text-lg">

@@ -113,8 +113,8 @@ export default function DocsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background pt-32 pb-20">
-      <div className="container max-w-6xl mx-auto px-4">
+    <div className="min-h-screen bg-background pt-20 pb-20">
+      <div className="container max-w-5xl mx-auto px-4">
         <div className="mb-12">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Documentation</h1>
           <p className="text-muted-foreground text-lg">
@@ -518,7 +518,7 @@ async function simulate(file: File, parameter: string, change: number) {
           </p>
           <div className="flex gap-4 justify-center">
             <Button asChild>
-              <a href="https://github.com/your-repo/praxify-cfo" target="_blank" rel="noopener noreferrer">
+              <a href="https://github.com/Rishabh9306/praxify-CFO/" target="_blank" rel="noopener noreferrer">
                 View on GitHub
               </a>
             </Button>

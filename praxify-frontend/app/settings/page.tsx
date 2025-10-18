@@ -53,7 +53,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-32 pb-20">
+    <div className="min-h-screen bg-background pt-20 pb-20">
       <div className="container max-w-4xl mx-auto px-4">
         <div className="mb-12">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Settings</h1>

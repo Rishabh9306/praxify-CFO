@@ -120,7 +120,7 @@ export default function PerformancePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pt-32 pb-20">
+    <div className="min-h-screen bg-background pt-20 pb-20">
       <div className="container max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between mb-12">
           <div>
@@ -188,22 +188,23 @@ export default function PerformancePage() {
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={performanceHistory}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="time" stroke="hsl(var(--foreground))" fontSize={12} />
-                  <YAxis stroke="hsl(var(--foreground))" fontSize={12} label={{ value: 'Seconds', angle: -90, position: 'insideLeft' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                  <XAxis dataKey="time" stroke="var(--color-foreground)" fontSize={12} />
+                  <YAxis stroke="var(--color-foreground)" fontSize={12} label={{ value: 'Seconds', angle: -90, position: 'insideLeft' }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'hsl(var(--background))',
-                      border: '1px solid hsl(var(--border))',
+                      backgroundColor: 'var(--color-background)',
+                      border: '1px solid var(--color-border)',
                       borderRadius: '8px',
+                      color: 'var(--color-foreground)'
                     }}
                   />
                   <Line
                     type="monotone"
                     dataKey="responseTime"
-                    stroke="hsl(var(--primary))"
+                    stroke="var(--color-primary)"
                     strokeWidth={2}
-                    dot={{ fill: 'hsl(var(--primary))' }}
+                    dot={{ fill: 'var(--color-primary)' }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -221,17 +222,18 @@ export default function PerformancePage() {
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={performanceHistory}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="time" stroke="hsl(var(--foreground))" fontSize={12} />
-                  <YAxis stroke="hsl(var(--foreground))" fontSize={12} label={{ value: 'Requests', angle: -90, position: 'insideLeft' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                  <XAxis dataKey="time" stroke="var(--color-foreground)" fontSize={12} />
+                  <YAxis stroke="var(--color-foreground)" fontSize={12} label={{ value: 'Requests', angle: -90, position: 'insideLeft' }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'hsl(var(--background))',
-                      border: '1px solid hsl(var(--border))',
+                      backgroundColor: 'var(--color-background)',
+                      border: '1px solid var(--color-border)',
                       borderRadius: '8px',
+                      color: 'var(--color-foreground)'
                     }}
                   />
-                  <Bar dataKey="requests" fill="hsl(var(--primary))" />
+                  <Bar dataKey="requests" fill="var(--color-primary)" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -250,17 +252,18 @@ export default function PerformancePage() {
           <CardContent>
             <ResponsiveContainer width="100%" height={400}>
               <BarChart data={componentMetrics} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis type="number" stroke="hsl(var(--foreground))" fontSize={12} label={{ value: 'Seconds', position: 'insideBottom', offset: -5 }} />
-                <YAxis type="category" dataKey="component" stroke="hsl(var(--foreground))" fontSize={12} width={150} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                <XAxis type="number" stroke="var(--color-foreground)" fontSize={12} label={{ value: 'Seconds', position: 'insideBottom', offset: -5 }} />
+                <YAxis type="category" dataKey="component" stroke="var(--color-foreground)" fontSize={12} width={150} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'hsl(var(--background))',
-                    border: '1px solid hsl(var(--border))',
+                    backgroundColor: 'var(--color-background)',
+                    border: '1px solid var(--color-border)',
                     borderRadius: '8px',
+                    color: 'var(--color-foreground)'
                   }}
                 />
-                <Bar dataKey="avgTime" fill="hsl(var(--primary))" />
+                <Bar dataKey="avgTime" fill="var(--color-primary)" />
               </BarChart>
             </ResponsiveContainer>
 

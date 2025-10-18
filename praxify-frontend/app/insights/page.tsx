@@ -81,7 +81,7 @@ export default function InsightsPage() {
   })) || [];
 
   return (
-    <div className="min-h-screen bg-background pt-32 pb-20">
+    <div className="min-h-screen bg-background pt-20 pb-20">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -130,28 +130,29 @@ export default function InsightsPage() {
             <CardContent>
               <ResponsiveContainer width="100%" height={400}>
                 <LineChart data={forecastData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" stroke="hsl(var(--foreground))" />
-                  <YAxis stroke="hsl(var(--foreground))" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                  <XAxis dataKey="date" stroke="var(--color-foreground)" />
+                  <YAxis stroke="var(--color-foreground)" />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: 'hsl(var(--background))',
-                      border: '1px solid hsl(var(--border))',
+                      backgroundColor: 'var(--color-background)',
+                      border: '1px solid var(--color-border)',
                       borderRadius: '8px',
+                      color: 'var(--color-foreground)'
                     }}
                   />
                   <Legend />
                   <Line 
                     type="monotone" 
                     dataKey="actual" 
-                    stroke="hsl(var(--primary))" 
+                    stroke="var(--color-primary)" 
                     strokeWidth={2}
                     name="Actual"
                   />
                   <Line 
                     type="monotone" 
                     dataKey="forecast" 
-                    stroke="hsl(var(--muted-foreground))" 
+                    stroke="var(--color-muted-foreground)" 
                     strokeWidth={2}
                     strokeDasharray="5 5"
                     name="Forecast"
@@ -173,17 +174,18 @@ export default function InsightsPage() {
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={profitDriverData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="category" stroke="hsl(var(--foreground))" />
-                    <YAxis stroke="hsl(var(--foreground))" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                    <XAxis dataKey="category" stroke="var(--color-foreground)" />
+                    <YAxis stroke="var(--color-foreground)" />
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: 'hsl(var(--background))',
-                        border: '1px solid hsl(var(--border))',
+                        backgroundColor: 'var(--color-background)',
+                        border: '1px solid var(--color-border)',
                         borderRadius: '8px',
+                        color: 'var(--color-foreground)'
                       }}
                     />
-                    <Bar dataKey="impact" fill="hsl(var(--primary))" />
+                    <Bar dataKey="impact" fill="var(--color-primary)" />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>

@@ -81,7 +81,7 @@ export default function AboutPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background pt-32 pb-20">
+    <div className="min-h-screen bg-background pt-20 pb-20">
       <div className="container max-w-6xl mx-auto px-4">
         {/* Hero Section */}
         <div className="text-center mb-16">
@@ -98,7 +98,7 @@ export default function AboutPage() {
             </Button>
             <Button asChild>
               <a 
-                href="https://github.com/your-repo/praxify-cfo" 
+                href="https://github.com/Rishabh9306/praxify-CFO/" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="gap-2"
@@ -257,7 +257,7 @@ export default function AboutPage() {
               <CardContent>
                 <Button asChild className="w-full">
                   <a 
-                    href="https://github.com/your-repo/praxify-cfo" 
+                    href="https://github.com/Rishabh9306/praxify-CFO/" 
                     target="_blank"
                     rel="noopener noreferrer"
                   >

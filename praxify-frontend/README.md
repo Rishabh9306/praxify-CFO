@@ -52,7 +52,7 @@ An AI-powered financial analysis platform that combines predictive forecasting, 
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-repo/praxify-cfo.git
+git clone https://github.com/Rishabh9306/praxify-CFO/.git
 
 # Navigate to project directory
 cd praxify-landing
@@ -206,7 +206,7 @@ MIT License
 ## 👥 Support
 
 - **Email**: support@praxify.com
-- **GitHub**: [Create an issue](https://github.com/your-repo/praxify-cfo/issues)
+- **GitHub**: [Create an issue](https://github.com/Rishabh9306/praxify-CFO//issues)
 - **Documentation**: Visit `/about` page
 
 ---
