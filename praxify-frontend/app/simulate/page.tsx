@@ -7,15 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrendingUp, TrendingDown, DollarSign, AlertCircle, Upload, FileSpreadsheet, X } from 'lucide-react';
-import { SimulationResult, PersonaMode, ForecastMetric } from '@/lib/types';
+import { TrendingUp, TrendingDown, DollarSign, Upload, FileSpreadsheet, X } from 'lucide-react';
+import { SimulationResult } from '@/lib/types';
 
 export default function SimulatePage() {
-  const { uploadedFile, uploadConfig, setUploadedFile, setUploadConfig } = useAppContext();
+  const { uploadedFile, setUploadedFile } = useAppContext();
   const [file, setFile] = useState<File | null>(uploadedFile);
   const [isDragging, setIsDragging] = useState(false);
-  const [persona, setPersona] = useState<PersonaMode>(uploadConfig?.persona || 'finance_guardian');
-  const [metric, setMetric] = useState<ForecastMetric>(uploadConfig?.forecast_metric || 'revenue');
   const [parameter, setParameter] = useState<string>('expenses');
   const [changePercent, setChangePercent] = useState<string>('10');
   const [isLoading, setIsLoading] = useState(false);
@@ -242,41 +240,6 @@ export default function SimulatePage() {
                 >
                   <X className="h-4 w-4" />
                 </Button>
-              </div>
-            )}
-
-            {file && (
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="persona" className="text-white">AI Persona</Label>
-                  <Select value={persona} onValueChange={(value: PersonaMode) => setPersona(value)}>
-                    <SelectTrigger id="persona">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="finance_guardian">Finance Guardian</SelectItem>
-                      <SelectItem value="financial_storyteller">Financial Storyteller</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-white/50">
-                    Guardian: Conservative | Storyteller: Strategic
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="metric" className="text-white">Forecast Metric</Label>
-                  <Select value={metric} onValueChange={(value: ForecastMetric) => setMetric(value)}>
-                    <SelectTrigger id="metric">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="revenue">Revenue</SelectItem>
-                      <SelectItem value="expenses">Expenses</SelectItem>
-                      <SelectItem value="profit">Profit</SelectItem>
-                      <SelectItem value="cash_flow">Cash Flow</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
             )}
           </CardContent>
