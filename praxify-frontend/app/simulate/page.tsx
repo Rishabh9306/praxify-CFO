@@ -80,21 +80,29 @@ export default function SimulatePage() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('persona', persona);
-      formData.append('forecast_metric', metric);
       formData.append('parameter', parameter);
       formData.append('change_percent', change.toString());
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/simulate`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/simulate_scenario`, {
         method: 'POST',
         body: formData,
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API error response:', errorText);
         throw new Error(`API error: ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('Simulation API response:', data);
+      
+      // Validate the response structure
+      if (!data.baseline || !data.simulation_results) {
+        console.error('Invalid response structure:', data);
+        throw new Error('Invalid response from API: missing baseline or simulation data');
+      }
+      
       setResult(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to run simulation');
@@ -350,8 +358,8 @@ export default function SimulatePage() {
                   <div className="mb-4 p-4 bg-white/10 rounded-lg border border-white/20">
                     <p className="font-semibold mb-2 text-white">Scenario:</p>
                     <p className="text-white/70">
-                      {result.parameter_changed} changed by {result.change_percent > 0 ? '+' : ''}
-                      {result.change_percent}%
+                      {result.scenario.parameter_changed} changed by {result.scenario.change_percentage > 0 ? '+' : ''}
+                      {result.scenario.change_percentage}%
                     </p>
                   </div>
                   <p className="whitespace-pre-wrap text-white/70">
@@ -363,45 +371,54 @@ export default function SimulatePage() {
 
             <div className="mb-8">
               <h3 className="text-xl font-bold mb-4 text-white">Before vs. After Comparison</h3>
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {Object.keys(result.baseline.kpis).map((key) => (
-                  <ComparisonCard
-                    key={key}
-                    title={key.replace(/_/g, ' ').toUpperCase()}
-                    baseline={result.baseline.kpis[key as keyof typeof result.baseline.kpis]}
-                    simulated={result.simulation_results.kpis[key as keyof typeof result.simulation_results.kpis]}
-                    label={key}
-                  />
-                ))}
+              <div className="grid md:grid-cols-2 gap-6">
+                <ComparisonCard
+                  title="TOTAL PROFIT"
+                  baseline={result.baseline.total_profit}
+                  simulated={result.simulation_results.total_profit}
+                  label="total_profit"
+                />
+                <ComparisonCard
+                  title="TOTAL CASHFLOW"
+                  baseline={result.baseline.total_cashflow}
+                  simulated={result.simulation_results.total_cashflow}
+                  label="total_cashflow"
+                />
               </div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card className="bg-white/5 border-white/20 backdrop-blur-md">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-white">
-                    <DollarSign className="h-5 w-5" />
-                    Baseline Narrative
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-white/70 whitespace-pre-wrap">
-                    {result.baseline.narrative}
-                  </p>
-                </CardContent>
-              </Card>
-
+            <div>
+              <h3 className="text-xl font-bold mb-4 text-white">Impact Analysis</h3>
               <Card className="bg-white/5 border-white/20 backdrop-blur-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-white">
                     <TrendingUp className="h-5 w-5" />
-                    Simulation Narrative
+                    Financial Impact
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-white/70 whitespace-pre-wrap">
-                    {result.simulation_results.narrative}
-                  </p>
+                <CardContent className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-white/10 rounded-lg border border-white/20">
+                      <p className="text-xs text-white/50 mb-2">Profit Impact</p>
+                      <p className="text-2xl font-bold text-white mb-1">
+                        ${result.impact.profit_impact_absolute.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </p>
+                      <p className={`text-sm font-semibold ${result.impact.profit_impact_absolute >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {result.impact.profit_impact_absolute >= 0 ? '+' : ''}
+                        {result.impact.profit_impact_percentage.toFixed(2)}%
+                      </p>
+                    </div>
+                    <div className="p-4 bg-white/10 rounded-lg border border-white/20">
+                      <p className="text-xs text-white/50 mb-2">Cashflow Impact</p>
+                      <p className="text-2xl font-bold text-white mb-1">
+                        ${result.impact.cashflow_impact_absolute.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </p>
+                      <p className={`text-sm font-semibold ${result.impact.cashflow_impact_absolute >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {result.impact.cashflow_impact_absolute >= 0 ? '+' : ''}
+                        {result.impact.cashflow_impact_percentage.toFixed(2)}%
+                      </p>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>

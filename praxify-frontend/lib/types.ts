@@ -70,17 +70,25 @@ export interface AgentAnalyzeResponse {
 }
 
 export interface SimulationResult {
+  scenario: {
+    parameter_changed: string;
+    change_percentage: number;
+  };
   baseline: {
-    kpis: KPIData;
-    narrative: string;
+    total_profit: number;
+    total_cashflow: number;
   };
   simulation_results: {
-    kpis: KPIData;
-    narrative: string;
+    total_profit: number;
+    total_cashflow: number;
+  };
+  impact: {
+    profit_impact_absolute: number;
+    profit_impact_percentage: number;
+    cashflow_impact_absolute: number;
+    cashflow_impact_percentage: number;
   };
   summary_text: string;
-  parameter_changed: string;
-  change_percent: number;
 }
 
 export interface SessionHistoryItem {
