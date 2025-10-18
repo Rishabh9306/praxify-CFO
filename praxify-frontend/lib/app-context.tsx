@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { FullReportResponse, AgentAnalyzeResponse, SessionHistoryItem, UploadConfig } from './types';
 
 interface AppState {
@@ -35,33 +35,27 @@ const AppContext = createContext<AppContextValue | null>(null);
 const STORAGE_KEY = 'praxify-cfo-sessions';
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AppState>(() => {
-    // Load session history from localStorage on init
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        return {
-          uploadedFile: null,
-          uploadConfig: null,
-          sessionId: null,
-          fullReportData: null,
-          agentData: null,
-          sessionHistory: stored ? JSON.parse(stored) : [],
-        };
-      } catch (e) {
-        console.error('Failed to load session history:', e);
-      }
-    }
-    
-    return {
-      uploadedFile: null,
-      uploadConfig: null,
-      sessionId: null,
-      fullReportData: null,
-      agentData: null,
-      sessionHistory: [],
-    };
+  const [state, setState] = useState<AppState>({
+    uploadedFile: null,
+    uploadConfig: null,
+    sessionId: null,
+    fullReportData: null,
+    agentData: null,
+    sessionHistory: [],
   });
+
+  // Load session history from localStorage after mount (client-side only)
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const sessionHistory = JSON.parse(stored);
+        setState(prev => ({ ...prev, sessionHistory }));
+      }
+    } catch (e) {
+      console.error('Failed to load session history:', e);
+    }
+  }, []);
 
   const setUploadedFile = useCallback((file: File | null) => {
     setState(prev => ({ ...prev, uploadedFile: file }));
