@@ -19,11 +19,12 @@ from aiml_engine.core.correlation import CrossMetricCorrelationTrendMiningEngine
 from aiml_engine.core.simulation import ScenarioSimulationEngine
 from aiml_engine.core.dashboard import BusinessDashboardOutputLayer
 from aiml_engine.core.explainability import ExplainabilityAuditLayer
+from aiml_engine.core.visualizations import VisualizationDataGenerator, TableGenerator
 # --- NEW INTEGRATION IMPORTS ---
 from aiml_engine.core.memory import ConversationalMemory
 from aiml_engine.core.agent import Agent
 # ---
-from aiml_engine.utils.helpers import CustomJSONEncoder
+from aiml_engine.utils.helpers import CustomJSONEncoder, convert_numpy_types
 from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv())
@@ -91,27 +92,58 @@ async def get_full_financial_report(
     processing_results = process_uploaded_file(file)
     featured_df = processing_results["featured_df"]
     
-    # Generate forecasts for all key metrics
-    metrics_to_forecast = ['revenue', 'expenses', 'profit', 'cashflow']
+    # Generate forecasts for all key financial metrics
+    core_metrics = ['revenue', 'expenses', 'profit', 'cashflow']
+    efficiency_metrics = ['dso', 'dpo', 'cash_conversion_cycle', 'ar', 'ap']
+    liquidity_metrics = ['working_capital']
+    ratio_metrics = ['profit_margin', 'expense_ratio', 'debt_to_equity_ratio']
+    
     all_forecasts = {}
     all_model_health = {}
     
-    for metric in metrics_to_forecast:
-        forecasting_module = ForecastingModule(metric=metric)
-        forecast, model_health = forecasting_module.generate_forecast(featured_df)
-        all_forecasts[metric] = forecast
-        all_model_health[metric] = model_health
+    # Forecast core metrics
+    for metric in core_metrics:
+        if metric in featured_df.columns:
+            forecasting_module = ForecastingModule(metric=metric)
+            forecast, model_health = forecasting_module.generate_forecast(featured_df)
+            all_forecasts[metric] = forecast
+            all_model_health[metric] = model_health
+    
+    # Forecast efficiency metrics
+    for metric in efficiency_metrics:
+        if metric in featured_df.columns:
+            forecasting_module = ForecastingModule(metric=metric)
+            forecast, model_health = forecasting_module.generate_forecast(featured_df)
+            if forecast:  # Only add if forecast successful
+                all_forecasts[metric] = forecast
+                all_model_health[metric] = model_health
+    
+    # Forecast liquidity metrics
+    for metric in liquidity_metrics:
+        if metric in featured_df.columns:
+            forecasting_module = ForecastingModule(metric=metric)
+            forecast, model_health = forecasting_module.generate_forecast(featured_df)
+            if forecast:
+                all_forecasts[metric] = forecast
+                all_model_health[metric] = model_health
+    
+    # Forecast ratio metrics
+    for metric in ratio_metrics:
+        if metric in featured_df.columns:
+            forecasting_module = ForecastingModule(metric=metric)
+            forecast, model_health = forecasting_module.generate_forecast(featured_df)
+            if forecast:
+                all_forecasts[metric] = forecast
+                all_model_health[metric] = model_health
     
     # Calculate growth_rate forecast from revenue forecast
-    if all_forecasts['revenue']:
+    if 'revenue' in all_forecasts and all_forecasts['revenue']:
         growth_rate_forecast = []
         for i, forecast_point in enumerate(all_forecasts['revenue']):
             if i == 0 and len(featured_df) > 0:
-                # Compare first forecast with last actual revenue
                 last_actual = featured_df['revenue'].iloc[-1]
                 growth = ((forecast_point['predicted'] - last_actual) / last_actual * 100) if last_actual != 0 else 0
             elif i > 0:
-                # Compare with previous forecast point
                 prev_forecast = all_forecasts['revenue'][i-1]['predicted']
                 growth = ((forecast_point['predicted'] - prev_forecast) / prev_forecast * 100) if prev_forecast != 0 else 0
             else:
@@ -120,7 +152,7 @@ async def get_full_financial_report(
             growth_rate_forecast.append({
                 "date": forecast_point['date'],
                 "predicted": growth,
-                "lower": growth * 0.8,  # Approximate confidence interval
+                "lower": growth * 0.8,
                 "upper": growth * 1.2
             })
         all_forecasts['growth_rate'] = growth_rate_forecast
@@ -131,6 +163,48 @@ async def get_full_financial_report(
             "status": "Success"
         }
     
+    # Regional forecasts (if region column exists with sufficient data)
+    if 'region' in featured_df.columns:
+        regions = featured_df['region'].unique()
+        regional_forecasts = {}
+        for region in regions:
+            region_df = featured_df[featured_df['region'] == region].copy()
+            if len(region_df) >= 24 and 'revenue' in region_df.columns:  # Need sufficient data
+                forecasting_module = ForecastingModule(metric='revenue')
+                forecast, _ = forecasting_module.generate_forecast(region_df)
+                if forecast:
+                    regional_forecasts[str(region)] = forecast
+        if regional_forecasts:
+            all_forecasts['regional_revenue'] = regional_forecasts
+            all_model_health['regional_revenue'] = {
+                "model_id": f"model_regional_{int(datetime.now().timestamp())}",
+                "best_model_selected": "Prophet",
+                "forecast_metric": "regional_revenue",
+                "regions": list(regional_forecasts.keys()),
+                "status": "Success"
+            }
+    
+    # Departmental forecasts (if department column exists with sufficient data)
+    if 'department' in featured_df.columns:
+        departments = featured_df['department'].unique()
+        dept_forecasts = {}
+        for dept in departments:
+            dept_df = featured_df[featured_df['department'] == dept].copy()
+            if len(dept_df) >= 24 and 'revenue' in dept_df.columns:
+                forecasting_module = ForecastingModule(metric='revenue')
+                forecast, _ = forecasting_module.generate_forecast(dept_df)
+                if forecast:
+                    dept_forecasts[str(dept)] = forecast
+        if dept_forecasts:
+            all_forecasts['departmental_revenue'] = dept_forecasts
+            all_model_health['departmental_revenue'] = {
+                "model_id": f"model_departmental_{int(datetime.now().timestamp())}",
+                "best_model_selected": "Prophet",
+                "forecast_metric": "departmental_revenue",
+                "departments": list(dept_forecasts.keys()),
+                "status": "Success"
+            }
+    
     # Use revenue for anomaly detection (primary metric)
     anomaly_module = AnomalyDetectionModule()
     anomalies = anomaly_module.detect_anomalies(featured_df, metric='revenue')
@@ -139,20 +213,43 @@ async def get_full_financial_report(
     correlation_report = correlation_module.generate_correlation_report(featured_df)
     explainer_module = ExplainabilityAuditLayer()
     profit_drivers = explainer_module.get_profit_drivers(featured_df)
+    
+    # Generate comprehensive visualizations
+    viz_module = VisualizationDataGenerator()
+    visualization_data = viz_module.generate_all_charts(featured_df)
+    
+    # Generate comprehensive tables
+    table_module = TableGenerator()
+    table_data = table_module.generate_all_tables(featured_df, all_forecasts)
+    
     dashboard_module = BusinessDashboardOutputLayer()
     
     # Pass revenue forecast for backward compatibility with dashboard module
     dashboard_output = dashboard_module.generate_dashboard(
-        featured_df=featured_df, forecast=all_forecasts['revenue'], anomalies=anomalies, mode=mode, correlation_report=correlation_report
+        featured_df=featured_df, forecast=all_forecasts.get('revenue', []), 
+        anomalies=anomalies, mode=mode, correlation_report=correlation_report
     )
     
-    # Replace single forecast_chart with multi-metric forecasts
+    # Add all comprehensive analytics
     dashboard_output["forecast_chart"] = all_forecasts
-    
-    dashboard_output["supporting_reports"] = processing_results["reports"]
     dashboard_output["model_health_report"] = all_model_health
+    dashboard_output["visualizations"] = visualization_data
+    dashboard_output["tables"] = table_data
+    dashboard_output["supporting_reports"] = processing_results["reports"]
     dashboard_output["raw_data_preview"] = json.loads(featured_df.head().to_json(orient='records', date_format='iso'))
     dashboard_output["profit_drivers"] = profit_drivers
+    
+    # Add enhanced KPIs summary
+    enhanced_kpis = {}
+    kpi_metrics = ['roas', 'marketing_efficiency', 'current_ratio', 'quick_ratio', 
+                   'working_capital', 'debt_to_equity_ratio', 'ar_turnover', 'ap_turnover',
+                   'cash_conversion_cycle', 'free_cash_flow', 'expense_ratio', 'solvency_ratio']
+    
+    for metric in kpi_metrics:
+        if metric in featured_df.columns:
+            enhanced_kpis[metric] = float(featured_df[metric].mean())
+    
+    dashboard_output["enhanced_kpis"] = enhanced_kpis
     
     # Use the proven manual serialization method
     json_string = json.dumps(dashboard_output, cls=CustomJSONEncoder)
@@ -258,6 +355,10 @@ async def agent_analyze_and_respond(
         "conversation_history": history
     }
 
+    # Pre-process the entire data structure to convert NaN/Inf to None
+    # This ensures valid JSON output (NaN -> null instead of literal NaN)
+    cleaned_data = convert_numpy_types(final_response_data)
+    
     # Use the proven manual serialization method for the final response
-    json_string = json.dumps(final_response_data, cls=CustomJSONEncoder)
+    json_string = json.dumps(cleaned_data, cls=CustomJSONEncoder)
     return Response(content=json_string, media_type="application/json")

@@ -54,7 +54,11 @@ class CrossMetricCorrelationTrendMiningEngine:
             return None
 
         try:
-            results = grangercausalitytests(data_diff[[metric_b, metric_a]], maxlag=max_lag, verbose=False)
+            # Suppress FutureWarning from statsmodels
+            import warnings
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=FutureWarning)
+                results = grangercausalitytests(data_diff[[metric_b, metric_a]], maxlag=max_lag, verbose=False)
             
             # Check p-values for significance (e.g., p < 0.05)
             for lag in range(1, max_lag + 1):

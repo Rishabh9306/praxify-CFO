@@ -52,13 +52,17 @@ class DataIngestion:
         max_similarity = 0.0
         best_match = None
         
-        for unified_key, synonyms in self.unified_schema.items():
-            for synonym in synonyms:
-                synonym_doc = self.nlp(synonym)
-                similarity = col_doc.similarity(synonym_doc)
-                if similarity > max_similarity:
-                    max_similarity = similarity
-                    best_match = unified_key
+        # Suppress spaCy similarity warning for small models
+        import warnings
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=UserWarning)
+            for unified_key, synonyms in self.unified_schema.items():
+                for synonym in synonyms:
+                    synonym_doc = self.nlp(synonym)
+                    similarity = col_doc.similarity(synonym_doc)
+                    if similarity > max_similarity:
+                        max_similarity = similarity
+                        best_match = unified_key
         
         if max_similarity > 0.75:
             return best_match, max_similarity
