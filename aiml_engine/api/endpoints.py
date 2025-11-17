@@ -3,6 +3,7 @@ import io
 import os
 import json
 import uuid
+from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form
 # Use the proven, correct Response object and Python 3.9 Optional
 from starlette.responses import Response 
@@ -75,10 +76,6 @@ async def get_full_financial_report(
     mode: str = Form(
         "finance_guardian",
         description="The persona for the agent's narrative generation. Use 'finance_guardian' for internal operational insights, or 'financial_storyteller' for external stakeholder narratives."
-    ), 
-    forecast_metric: str = Form(
-        "revenue",
-        description="The primary financial metric you want to forecast and analyze for anomalies (e.g., 'revenue', 'expenses', 'cashflow')."
     )
 ):
     """
@@ -88,25 +85,72 @@ async def get_full_financial_report(
     It does not have conversational memory. Use this for generating static reports or initial dashboard loads.
     
     - **Upload a CSV**: The agent will clean it, validate it, and normalize it.
-    - **Receive a full report**: Includes KPIs, a 3-month forecast, detected anomalies, correlation insights, and narrative summaries.
+    - **Receive a full report**: Includes KPIs, 3-month forecasts for all key metrics (revenue, expenses, profit, cashflow, growth_rate), detected anomalies, correlation insights, and narrative summaries.
     - **Choose a persona**: Select `finance_guardian` or `financial_storyteller` to tailor the narrative output.
     """
     processing_results = process_uploaded_file(file)
     featured_df = processing_results["featured_df"]
-    forecasting_module = ForecastingModule(metric=forecast_metric)
-    forecast, model_health = forecasting_module.generate_forecast(featured_df)
+    
+    # Generate forecasts for all key metrics
+    metrics_to_forecast = ['revenue', 'expenses', 'profit', 'cashflow']
+    all_forecasts = {}
+    all_model_health = {}
+    
+    for metric in metrics_to_forecast:
+        forecasting_module = ForecastingModule(metric=metric)
+        forecast, model_health = forecasting_module.generate_forecast(featured_df)
+        all_forecasts[metric] = forecast
+        all_model_health[metric] = model_health
+    
+    # Calculate growth_rate forecast from revenue forecast
+    if all_forecasts['revenue']:
+        growth_rate_forecast = []
+        for i, forecast_point in enumerate(all_forecasts['revenue']):
+            if i == 0 and len(featured_df) > 0:
+                # Compare first forecast with last actual revenue
+                last_actual = featured_df['revenue'].iloc[-1]
+                growth = ((forecast_point['predicted'] - last_actual) / last_actual * 100) if last_actual != 0 else 0
+            elif i > 0:
+                # Compare with previous forecast point
+                prev_forecast = all_forecasts['revenue'][i-1]['predicted']
+                growth = ((forecast_point['predicted'] - prev_forecast) / prev_forecast * 100) if prev_forecast != 0 else 0
+            else:
+                growth = 0
+            
+            growth_rate_forecast.append({
+                "date": forecast_point['date'],
+                "predicted": growth,
+                "lower": growth * 0.8,  # Approximate confidence interval
+                "upper": growth * 1.2
+            })
+        all_forecasts['growth_rate'] = growth_rate_forecast
+        all_model_health['growth_rate'] = {
+            "model_id": f"model_derived_{int(datetime.now().timestamp())}",
+            "best_model_selected": "Derived from Revenue",
+            "forecast_metric": "growth_rate",
+            "status": "Success"
+        }
+    
+    # Use revenue for anomaly detection (primary metric)
     anomaly_module = AnomalyDetectionModule()
-    anomalies = anomaly_module.detect_anomalies(featured_df, metric=forecast_metric)
+    anomalies = anomaly_module.detect_anomalies(featured_df, metric='revenue')
+    
     correlation_module = CrossMetricCorrelationTrendMiningEngine()
     correlation_report = correlation_module.generate_correlation_report(featured_df)
     explainer_module = ExplainabilityAuditLayer()
     profit_drivers = explainer_module.get_profit_drivers(featured_df)
     dashboard_module = BusinessDashboardOutputLayer()
+    
+    # Pass revenue forecast for backward compatibility with dashboard module
     dashboard_output = dashboard_module.generate_dashboard(
-        featured_df=featured_df, forecast=forecast, anomalies=anomalies, mode=mode, correlation_report=correlation_report
+        featured_df=featured_df, forecast=all_forecasts['revenue'], anomalies=anomalies, mode=mode, correlation_report=correlation_report
     )
+    
+    # Replace single forecast_chart with multi-metric forecasts
+    dashboard_output["forecast_chart"] = all_forecasts
+    
     dashboard_output["supporting_reports"] = processing_results["reports"]
-    dashboard_output["model_health_report"] = model_health
+    dashboard_output["model_health_report"] = all_model_health
     dashboard_output["raw_data_preview"] = json.loads(featured_df.head().to_json(orient='records', date_format='iso'))
     dashboard_output["profit_drivers"] = profit_drivers
     
