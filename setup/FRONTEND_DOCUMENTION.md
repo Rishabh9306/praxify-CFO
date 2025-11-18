@@ -66,9 +66,9 @@ It should be disabled until a file is uploaded.
 
 ---
 
-### **2. Main Display Area**
+### 2. **Main Display Area**
 
-This area is populated with the data from the JSON response of `/api/agent/analyze_and_respond`.
+This area is populated with the data from the JSON response of `/api/full_report` or `/api/agent/analyze_and_respond`.
 
 #### **Feature: Conversational Log / Chat History**
 **Functionality:** The main view of the page, displaying the conversation turn-by-turn.
@@ -78,7 +78,9 @@ This area is populated with the data from the JSON response of `/api/agent/analy
 - For each item in the array, display:
   - `summary.user_query` as the **user's message**  
   - `summary.ai_response` as the **agent's message**
+  - `summary.timestamp` for chronological ordering
 - The `ai_response` text should be rendered as **Markdown** to support formatting (headings, bullet points, bold text, etc.).
+- The current turn's AI response is also available at root level as `ai_response` field.
 
 #### **Feature: Dynamic KPI Dashboard**
 **Functionality:** A section displaying the key performance indicators for the current analysis.

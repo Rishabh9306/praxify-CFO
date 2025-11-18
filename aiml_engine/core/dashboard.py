@@ -94,6 +94,9 @@ class BusinessDashboardOutputLayer:
             featured_df=featured_df
         )
 
+        # Extract narrative_generation_warnings (TASK 1 requirement)
+        narrative_warnings = narratives.get('narrative_generation_warnings', [])
+        
         dashboard_model = {
             "dashboard_mode": mode,
             "metadata": {
@@ -106,7 +109,10 @@ class BusinessDashboardOutputLayer:
             "anomalies_table": anomalies,
             "narratives": narratives,
             "correlation_insights": correlation_report,
-            "scenario_simulations": simulation_results
+            "scenario_simulations": simulation_results,
+            "supporting_reports": {
+                "narrative_generation_warnings": narrative_warnings
+            }
         }
         
         if mode == 'finance_guardian':

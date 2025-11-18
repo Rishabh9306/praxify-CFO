@@ -41,18 +41,10 @@ class KPIAutoExtractionDynamicFeatureEngineering:
                 featured_df['profit'] = featured_df['revenue'] - featured_df['expenses']
                 add_feature_to_schema('profit', ['revenue', 'expenses'], 'revenue - expenses')
             
-            # Profit Margin
+            # Profit Margin (also known as Net Profit Margin)
             featured_df['profit_margin'] = np.where(featured_df['revenue'] > 0, 
                 featured_df['profit'] / featured_df['revenue'], 0)
             add_feature_to_schema('profit_margin', ['profit', 'revenue'], 'profit / revenue')
-            
-            # Operating Margin (same as profit margin in this context)
-            featured_df['operating_margin'] = featured_df['profit_margin']
-            add_feature_to_schema('operating_margin', ['profit', 'revenue'], 'profit / revenue')
-            
-            # Contribution Margin (same as profit margin without inventory data)
-            featured_df['contribution_margin'] = featured_df['profit_margin']
-            add_feature_to_schema('contribution_margin', ['profit', 'revenue'], 'profit / revenue')
 
         # ==================== COST METRICS ====================
         

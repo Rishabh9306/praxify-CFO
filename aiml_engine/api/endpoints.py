@@ -251,8 +251,74 @@ async def get_full_financial_report(
     
     dashboard_output["enhanced_kpis"] = enhanced_kpis
     
+    # Generate session_id for conversation tracking
+    session_id = f"sess_{int(datetime.now().timestamp())}"
+    
+    # Create AI response text based on mode
+    if mode == "financial_storyteller":
+        ai_response_text = f"""# 📊 Financial Performance Analysis
+
+## Executive Summary
+{dashboard_output.get('narratives', {}).get('summary_text', 'Analysis complete.')}
+
+## Key Performance Indicators
+- **Revenue Growth**: {dashboard_output.get('kpis', {}).get('growth_rate', 0):.2f}%
+- **Profit Margin**: {dashboard_output.get('kpis', {}).get('profit_margin', 0)*100:.1f}%
+- **Financial Health Score**: {dashboard_output.get('kpis', {}).get('financial_health_score', 0):.1f}/100
+- **Cash Flow**: ${dashboard_output.get('kpis', {}).get('cashflow', 0):,.0f}
+
+## Strategic Insights
+{chr(10).join(dashboard_output.get('narratives', {}).get('analyst_insights', []))}
+
+## Recommendations
+{chr(10).join(['- ' + rec for rec in dashboard_output.get('recommendations', [])])}
+"""
+    else:  # finance_guardian
+        ai_response_text = f"""# 🔍 Comprehensive Financial Analysis Report
+
+## Financial Health Assessment
+{dashboard_output.get('narratives', {}).get('summary_text', 'Analysis complete.')}
+
+## Critical KPIs
+- Total Revenue: ${dashboard_output.get('kpis', {}).get('total_revenue', 0):,.0f}
+- Total Expenses: ${dashboard_output.get('kpis', {}).get('total_expenses', 0):,.0f}
+- Profit Margin: {dashboard_output.get('kpis', {}).get('profit_margin', 0)*100:.1f}%
+- Growth Rate: {dashboard_output.get('kpis', {}).get('growth_rate', 0):.2f}%
+- Financial Health Score: {dashboard_output.get('kpis', {}).get('financial_health_score', 0):.1f}/100
+
+## Operational Insights
+{chr(10).join(dashboard_output.get('narratives', {}).get('analyst_insights', []))}
+
+## Action Items
+{chr(10).join(['• ' + rec for rec in dashboard_output.get('recommendations', [])])}
+
+## Model Performance
+All forecast models operational. {len(all_model_health)} metrics forecasted with {dashboard_output.get('kpis', {}).get('forecast_accuracy', 0):.1f}% accuracy.
+"""
+    
+    # Initialize conversation history for first interaction
+    conversation_history = [{
+        "summary": {
+            "user_query": "Analyze my financial data and provide comprehensive insights",
+            "ai_response": ai_response_text,
+            "timestamp": datetime.now().isoformat() + "Z"
+        }
+    }]
+    
+    # Assemble final response with proper structure for frontend
+    final_response = {
+        "session_id": session_id,
+        "ai_response": ai_response_text,
+        "conversation_history": conversation_history,
+        "full_analysis_report": dashboard_output
+    }
+    
+    # Pre-process the entire data structure to convert NaN/Inf to None
+    # This ensures valid JSON output (NaN -> null instead of literal NaN)
+    cleaned_data = convert_numpy_types(final_response)
+    
     # Use the proven manual serialization method
-    json_string = json.dumps(dashboard_output, cls=CustomJSONEncoder)
+    json_string = json.dumps(cleaned_data, cls=CustomJSONEncoder)
     return Response(content=json_string, media_type="application/json")
 
 # This endpoint is UNTOUCHED. It works perfectly.

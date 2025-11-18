@@ -152,26 +152,60 @@ with open('./aiml_engine/data/sample_financial_data.csv', 'rb') as f:
         print(f"Impact analysis completed")
 ```
 
+## 📊 Expected Response Structure
+
+All endpoints now return a consistent structure:
+
+```json
+{
+  "session_id": "sess_1763416108853",
+  "ai_response": "# Markdown formatted response...",
+  "conversation_history": [
+    {
+      "summary": {
+        "user_query": "Question or analysis request",
+        "ai_response": "AI's markdown response",
+        "timestamp": "2025-11-17T21:48:27.411414Z"
+      }
+    }
+  ],
+  "full_analysis_report": {
+    "dashboard_mode": "finance_guardian",
+    "metadata": {...},
+    "kpis": {...},
+    "forecast_chart": {...},
+    "visualizations": {...},
+    "tables": {...},
+    "narratives": {...}
+  }
+}
+```
+
 ## 🎯 Understanding the Endpoints
 
 ### 1. `/api/full_report`
 
-**Purpose:** Complete financial analysis with forecasting and anomaly detection
+**Purpose:** Complete financial analysis with forecasting and anomaly detection (One-shot, stateless)
 
 **Parameters:**
 - `file`: CSV file with financial data
 - `mode`: 
   - `finance_guardian`: Internal view with detailed technical insights
   - `financial_storyteller`: External view with stakeholder-friendly narratives
-- `forecast_metric`: Metric to forecast (e.g., `revenue`, `expense`, `profit`)
 
 **Returns:** JSON with:
-- Forecast predictions
-- Anomaly detection results
-- Correlation analysis
-- KPI calculations
-- Narrative summaries
-- Dashboard data
+- **`session_id`**: Unique session identifier for conversation tracking
+- **`ai_response`**: Markdown-formatted AI narrative summary
+- **`conversation_history`**: Array of conversation turns with timestamps
+- **`full_analysis_report`**: Complete structured analysis data including:
+  - Forecast predictions (14 metrics: revenue, expenses, profit, cashflow, dso, dpo, cash_conversion_cycle, ar, ap, working_capital, profit_margin, expense_ratio, debt_to_equity_ratio, growth_rate)
+  - Anomaly detection results
+  - Correlation analysis (40x40 matrix + regional correlations)
+  - KPI calculations
+  - Narrative summaries
+  - Dashboard data (breakdowns, time series, tables)
+  - Model health reports
+  - Enhanced KPIs
 
 ### 2. `/api/simulate`
 
@@ -266,6 +300,63 @@ docker compose logs -f aiml-engine
 - [ ] Tested scenario simulation (increase)
 - [ ] Reviewed generated reports
 - [ ] Understood the difference between modes
+- [ ] Verified `session_id` is present in all responses
+- [ ] Verified `conversation_history` array is present
+- [ ] Verified `full_analysis_report` wrapper contains all analysis data
+- [ ] Verified NaN values are converted to `null` in JSON
+- [ ] Verified all 14 forecast metrics are included
+
+## 🔑 Key Response Fields Reference
+
+### Top-Level Fields
+- **`session_id`**: String - Use for follow-up requests in conversational endpoints
+- **`ai_response`**: String (Markdown) - Human-readable AI-generated summary
+- **`conversation_history`**: Array - All conversation turns with timestamps
+- **`full_analysis_report`**: Object - Complete structured analysis data
+
+### Within `full_analysis_report`:
+- **`dashboard_mode`**: String - "finance_guardian" or "financial_storyteller"
+- **`metadata`**: Object - Dataset info (generated_at, data_start_date, data_end_date)
+- **`kpis`**: Object - 8 key performance indicators
+- **`forecast_chart`**: Object - 14 forecasted metrics with date, predicted, lower, upper
+- **`anomalies_table`**: Array - Detected anomalies (if any)
+- **`narratives`**: Object - summary_text, recommendations, analyst_insights
+- **`correlation_insights`**: Array - Top 6 metric correlations
+- **`scenario_simulations`**: Object - What-if scenario results (if requested)
+- **`recommendations`**: Array - Actionable recommendations
+- **`model_health_report`**: Object - ML model performance for each forecast
+- **`visualizations`**: Object - Charts data (breakdowns, time_series, correlations)
+- **`tables`**: Object - Summaries (quarterly, annual, regional, diagnostics, forecasts)
+- **`supporting_reports`**: Object - Data validation and feature engineering logs
+- **`raw_data_preview`**: Array - First 5 rows of processed data
+- **`profit_drivers`**: Object - Top 5 factors impacting profitability
+- **`enhanced_kpis`**: Object - Additional calculated KPIs
+
+## 📈 Forecast Metrics Available (14 Total)
+
+All `/api/full_report` responses include 3-month forecasts for:
+
+**Core Metrics:**
+1. revenue
+2. expenses
+3. profit
+4. cashflow
+
+**Efficiency Metrics:**
+5. dso (Days Sales Outstanding)
+6. dpo (Days Payable Outstanding)
+7. cash_conversion_cycle
+8. ar (Accounts Receivable)
+9. ap (Accounts Payable)
+
+**Liquidity Metrics:**
+10. working_capital
+
+**Ratio Metrics:**
+11. profit_margin
+12. expense_ratio
+13. debt_to_equity_ratio
+14. growth_rate (derived from revenue)
 
 ---
 
