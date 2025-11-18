@@ -1,34 +1,81 @@
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-
-# Distribution / packaging
+*.so
+.Python
 build/
+develop-eggs/
 dist/
-*.egg-info/
+downloads/
+eggs/
 .eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
 # Virtual environments
 venv/
 env/
+ENV/
+.venv
+
+# Environment variables
 .env
+.env.local
+.env.*.local
 
-# Jupyter Notebook checkpoints
+# Jupyter Notebook
 .ipynb_checkpoints
+*.ipynb_checkpoints/
 
-# Test and coverage reports
+# Testing
 .pytest_cache/
-htmlcov/
 .coverage
+htmlcov/
+.tox/
+.hypothesis/
 
-# IDE and OS files
+# IDEs
 .idea/
 .vscode/
+*.swp
+*.swo
+*~
 .DS_Store
 
-# Temporary and log files
+# Logs
 *.log
+logs/
 *.tmp
-temp_upload.csv
+
+# Temporary files
+temp_*.csv
+temp_*.json
+*_temp.*
+
+# Docker
+.dockerignore
+
+# Project specific
+uploads/*
+!uploads/.gitkeep
+outputs/*
+!outputs/.gitkeep
 dashboard_output.json
+
+# Documentation (keep main README)
+*_SUMMARY.md
+*_VERIFICATION.md
+*_AUDIT.md
+*_GUIDE.md
+*_ANALYSIS.md
+*_UPDATE*.md
+*_FIX*.md
+*_REPORT*.md
