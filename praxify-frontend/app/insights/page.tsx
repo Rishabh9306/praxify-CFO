@@ -122,6 +122,9 @@ export default function InsightsPage() {
               displayValue = value;
             }
 
+            // Determine if this metric should show a dollar sign (only for currency values)
+            const isCurrencyMetric = !['growth_rate', 'forecast_accuracy', 'financial_health_score', 'dso', 'profit_margin'].includes(key);
+
             return (
               <Card key={key}>
                 <CardHeader className="pb-3">
@@ -129,7 +132,7 @@ export default function InsightsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5 text-primary" />
+                    {isCurrencyMetric && <DollarSign className="h-5 w-5 text-primary" />}
                     <p className="text-3xl font-bold">
                       {displayValue}
                     </p>
