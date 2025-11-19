@@ -98,23 +98,46 @@ export default function InsightsPage() {
 
         {/* KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {Object.entries(fullReportData.kpis || {}).map(([key, value]) => (
-            <Card key={key}>
-              <CardHeader className="pb-3">
-                <CardDescription className="capitalize">{key.replace(/_/g, ' ')}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-primary" />
-                  <p className="text-3xl font-bold">
-                    {typeof value === 'number' 
-                      ? value.toLocaleString(undefined, { maximumFractionDigits: 0 }) 
-                      : value}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {Object.entries(fullReportData.kpis || {}).map(([key, value]) => {
+            // Format value based on metric type
+            let displayValue = '';
+            if (typeof value === 'number') {
+              if (key === 'profit_margin') {
+                // Display as percentage with 2 decimals
+                displayValue = `${(value * 100).toFixed(2)}%`;
+              } else if (key === 'growth_rate' || key === 'forecast_accuracy') {
+                // Add % symbol
+                displayValue = `${value.toFixed(2)}%`;
+              } else if (key === 'financial_health_score') {
+                // Add /100 suffix
+                displayValue = `${value.toFixed(2)}/100`;
+              } else if (key === 'dso') {
+                // Add Days suffix
+                displayValue = `${value.toFixed(2)} Days`;
+              } else {
+                // Default formatting for currency values
+                displayValue = value.toLocaleString(undefined, { maximumFractionDigits: 0 });
+              }
+            } else {
+              displayValue = value;
+            }
+
+            return (
+              <Card key={key}>
+                <CardHeader className="pb-3">
+                  <CardDescription className="capitalize">{key.replace(/_/g, ' ')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                    <p className="text-3xl font-bold">
+                      {displayValue}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {/* Forecast Chart */}
@@ -144,18 +167,30 @@ export default function InsightsPage() {
                   <Legend />
                   <Line 
                     type="monotone" 
-                    dataKey="actual" 
-                    stroke="var(--color-primary)" 
-                    strokeWidth={2}
-                    name="Actual"
+                    dataKey="forecast" 
+                    stroke="#10b981" 
+                    strokeWidth={2.5}
+                    name="Forecast"
+                    dot={{ fill: '#10b981', r: 4 }}
+                    connectNulls={true}
                   />
                   <Line 
                     type="monotone" 
-                    dataKey="forecast" 
-                    stroke="var(--color-muted-foreground)" 
-                    strokeWidth={2}
+                    dataKey="lower" 
+                    stroke="#6366f1" 
+                    strokeWidth={1.5}
                     strokeDasharray="5 5"
-                    name="Forecast"
+                    name="Lower Bound"
+                    dot={false}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="upper" 
+                    stroke="#f59e0b" 
+                    strokeWidth={1.5}
+                    strokeDasharray="5 5"
+                    name="Upper Bound"
+                    dot={false}
                   />
                 </LineChart>
               </ResponsiveContainer>

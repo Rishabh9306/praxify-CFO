@@ -205,18 +205,41 @@ export default function ChatPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {Object.entries(agentData.full_analysis_report?.kpis || {}).map(([key, value]) => (
-                  <div key={key} className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground capitalize">
-                      {key.replace(/_/g, ' ')}
-                    </span>
-                    <span className="font-semibold">
-                      {typeof value === 'number'
-                        ? value.toLocaleString(undefined, { maximumFractionDigits: 0 })
-                        : value}
-                    </span>
-                  </div>
-                ))}
+                {Object.entries(agentData.full_analysis_report?.kpis || {}).map(([key, value]) => {
+                  // Format value based on metric type
+                  let displayValue = '';
+                  if (typeof value === 'number') {
+                    if (key === 'profit_margin') {
+                      // Display as percentage with 2 decimals
+                      displayValue = `${(value * 100).toFixed(2)}%`;
+                    } else if (key === 'growth_rate' || key === 'forecast_accuracy') {
+                      // Add % symbol
+                      displayValue = `${value.toFixed(2)}%`;
+                    } else if (key === 'financial_health_score') {
+                      // Add /100 suffix
+                      displayValue = `${value.toFixed(2)}/100`;
+                    } else if (key === 'dso') {
+                      // Add Days suffix
+                      displayValue = `${value.toFixed(2)} Days`;
+                    } else {
+                      // Default formatting for currency values
+                      displayValue = value.toLocaleString(undefined, { maximumFractionDigits: 0 });
+                    }
+                  } else {
+                    displayValue = value;
+                  }
+
+                  return (
+                    <div key={key} className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground capitalize">
+                        {key.replace(/_/g, ' ')}
+                      </span>
+                      <span className="font-semibold">
+                        {displayValue}
+                      </span>
+                    </div>
+                  );
+                })}
               </CardContent>
             </Card>
 
@@ -245,18 +268,12 @@ export default function ChatPage() {
                       />
                       <Line
                         type="monotone"
-                        dataKey="actual"
-                        stroke="var(--color-primary)"
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                      <Line
-                        type="monotone"
                         dataKey="forecast"
-                        stroke="var(--color-muted-foreground)"
+                        stroke="#10b981"
                         strokeWidth={2}
-                        strokeDasharray="5 5"
-                        dot={false}
+                        name="Forecast"
+                        dot={{ fill: '#10b981', r: 3 }}
+                        connectNulls={true}
                       />
                     </LineChart>
                   </ResponsiveContainer>
