@@ -370,7 +370,7 @@ pip install -r requirements.txt
 python -c "import prophet; import fastapi; print('✅ Dependencies OK')"
 ```
 
-### Step 3: Start the Docker Redis Server
+#### Step 3: Start the Docker Redis Server
 ```bash
 # Run Once
 docker run --name agentic-cfo-redis -p 6379:6379 -d redis
