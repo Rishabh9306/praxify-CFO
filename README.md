@@ -202,33 +202,7 @@ After:  ██████ 60s (26 layer parallel on 8 cores) ⚡
 
 ### High-Level System Architecture
 
-```mermaid
-graph TB
-    A[📊 User/Frontend] -->|CSV Upload + Query| B[🌐 FastAPI REST API]
-    B --> C{🔒 Security Gateway}
-    C -->|Encrypted| D[🧠 AI/ML Engine]
-    
-    D --> E[📥 Data Ingestion]
-    D --> F[🔮 Forecasting Module]
-    D --> G[⚠️ Anomaly Detection]
-    D --> H[💡 Scenario Simulator]
-    D --> I[🗣️ Conversational Agent]
-    
-    E -->|Validated Data| J[(🔐 Secure Memory)]
-    F -->|Prophet/AutoARIMA| J
-    G -->|Statistical Analysis| J
-    H -->|What-If Models| J
-    I -->|LLM Integration| J
-    
-    J -->|Encrypted Results| K[📊 Dashboard Generator]
-    K -->|JSON Response| B
-    B -->|Secure Response| A
-    
-    style C fill:#ff6b6b
-    style D fill:#4ecdc4
-    style J fill:#ffe66d
-    style K fill:#95e1d3
-```
+![Praxifi-Architecture](praxifi-architecture.png)
 
 ### Data Flow Diagram
 
@@ -397,7 +371,16 @@ pip install -r requirements.txt
 python -c "import prophet; import fastapi; print('✅ Dependencies OK')"
 ```
 
-#### Step 3: Start the API Server
+### Step 3: Start the Docker Redis Server
+```bash
+# Run Once
+docker run --name agentic-cfo-redis -p 6379:6379 -d redis
+
+#Run this from next time
+docker start agentic-cfo-redis
+```
+
+#### Step 4: Start the API Server
 ```bash
 # Start FastAPI server
 python -m uvicorn aiml_engine.api.app:app --reload --host 0.0.0.0 --port 8000
@@ -407,7 +390,7 @@ python -m uvicorn aiml_engine.api.app:app --reload --host 0.0.0.0 --port 8000
 # INFO:     Application startup complete
 ```
 
-#### Step 4: Test the API
+#### Step 5: Test the API
 ```bash
 # Test with sample data
 python test_api_endpoint.py
