@@ -1210,7 +1210,7 @@ If you use Praxify CFO in your research or business, please cite:
   author = {Praxify Team},
   year = {2025},
   url = {https://github.com/Rishabh9306/praxify-CFO},
-  version = {2.0}
+  version = {1.0}
 }
 ```
 
