@@ -28,10 +28,11 @@ class DataIngestion:
             "assets": ["assets", "total assets"],
             "ar": ["accounts receivable", "ar"],
             "ap": ["accounts payable", "ap"],
+            "marketing_spend": ["marketing spend", "marketing budget", "ad spend", "advertising costs"],
             "region": ["region", "country", "market", "location"],
             "department": ["department", "business_unit", "cost center"]
         }
-        self.numeric_keys = ["revenue", "expenses", "profit", "cashflow", "liabilities", "assets", "ar", "ap"]
+        self.numeric_keys = ["revenue", "expenses", "profit", "cashflow", "liabilities", "assets", "ar", "ap", "marketing_spend"]
 
         # --- FIX #2: THE BLOCKLIST ---
         # A list of common non-financial columns to prevent incorrect mapping.

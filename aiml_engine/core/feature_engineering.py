@@ -182,19 +182,22 @@ class KPIAutoExtractionDynamicFeatureEngineering:
 
         # ==================== MARKETING EFFICIENCY METRICS ====================
         
-        if 'Marketing Spend' in featured_df.columns:
+        # Check for marketing_spend column (normalized name) or Marketing Spend (original)
+        marketing_col = 'marketing_spend' if 'marketing_spend' in featured_df.columns else 'Marketing Spend'
+        
+        if marketing_col in featured_df.columns:
             if 'revenue' in featured_df.columns:
                 # ROAS (Return on Ad Spend)
-                featured_df['roas'] = np.where(featured_df['Marketing Spend'] > 0,
-                    featured_df['revenue'] / featured_df['Marketing Spend'], 0)
-                add_feature_to_schema('roas', ['revenue', 'Marketing Spend'], 
+                featured_df['roas'] = np.where(featured_df[marketing_col] > 0,
+                    featured_df['revenue'] / featured_df[marketing_col], 0)
+                add_feature_to_schema('roas', ['revenue', marketing_col], 
                     'revenue / marketing_spend')
             
             if 'profit' in featured_df.columns:
                 # Marketing Efficiency Ratio
-                featured_df['marketing_efficiency'] = np.where(featured_df['Marketing Spend'] > 0,
-                    featured_df['profit'] / featured_df['Marketing Spend'], 0)
-                add_feature_to_schema('marketing_efficiency', ['profit', 'Marketing Spend'], 
+                featured_df['marketing_efficiency'] = np.where(featured_df[marketing_col] > 0,
+                    featured_df['profit'] / featured_df[marketing_col], 0)
+                add_feature_to_schema('marketing_efficiency', ['profit', marketing_col], 
                     'profit / marketing_spend')
 
         # Fill any remaining NaNs

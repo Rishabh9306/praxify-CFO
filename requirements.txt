@@ -54,3 +54,9 @@ google-generativeai==0.7.2
 
 # === Redis Server ===
 redis==5.0.7
+
+# === SECURITY & CRYPTOGRAPHY STACK ===
+# Enterprise-grade security modules for maximum data protection
+cryptography==43.0.3  # AES-256-GCM encryption, secure memory
+phe==1.5.0  # Paillier homomorphic encryption (compute on encrypted data)
+pycryptodome==3.21.0  # Additional cryptographic primitives
