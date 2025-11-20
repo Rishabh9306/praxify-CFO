@@ -1,7 +1,6 @@
 <div align="center">
 
-![Praxifi](PRAXIFI.png)
-### *Enterprise-Grade AI-Powered Financial Intelligence Platform*
+![Praxifi](PRAXIFI-TOP.png)
 
 [![MMumbaiHacks](https://img.shields.io/badge/MumbaiHacks-2k25-orange.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/downloads/)
