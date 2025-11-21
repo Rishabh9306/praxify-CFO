@@ -1,0 +1,62 @@
+# requirements.txt
+#
+# FINAL GUARANTEED STABLE VERSION - V6 (Final Starlette Pin Correction)
+# Solves all conflicts by selecting known-compatible versions.
+
+# === Core Data Science Stack ===
+# This is our stable, non-negotiable base for binary compatibility.
+numpy==1.26.4
+pandas==2.2.2
+scikit-learn==1.4.2
+statsmodels==0.14.1
+scipy==1.13.1
+
+# === NLP STACK (The Anchor) ===
+# This stable spacy version dictates the version of `typer`.
+spacy==3.4.4
+typer<0.8.0 # Essential pin for spacy compatibility.
+
+# We also pin spacy's direct dependencies to avoid any ambiguity.
+thinc==8.1.5
+blis==0.7.9
+confection==0.0.4
+murmurhash==1.0.9
+preshed==3.0.8
+srsly==2.4.5
+catalogue==2.0.8
+wasabi==0.10.1
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.4.1/en_core_web_sm-3.4.1.tar.gz#egg=en_core_web_sm
+
+# === FORECASTING STACK ===
+prophet==1.1.5
+holidays==0.41 # Stable version for Prophet
+pmdarima==2.0.4
+cmdstanpy==1.2.2
+
+# === STABLE API STACK ===
+# Updated API stack with latest security patches
+fastapi==0.115.5  # Latest stable with security fixes
+starlette==0.41.3  # Latest - fixes multiple CVEs including multipart DoS
+uvicorn[standard]==0.32.1  # Latest with performance improvements
+python-multipart==0.0.12  # Latest - fixes path traversal and ReDoS vulnerabilities
+
+# === UTILITIES AND OTHER TOOLS ===
+shap==0.45.0
+matplotlib==3.8.4
+pytest==8.2.0
+requests==2.31.0
+jupyter==1.0.0
+plotly==5.22.0
+python-dotenv==1.0.1
+
+# === LLM ===
+google-generativeai==0.7.2
+
+# === Redis Server ===
+redis==5.0.7
+
+# === SECURITY & CRYPTOGRAPHY STACK ===
+# Enterprise-grade security modules for maximum data protection
+cryptography==43.0.3  # AES-256-GCM encryption, secure memory
+phe==1.5.0  # Paillier homomorphic encryption (compute on encrypted data)
+pycryptodome==3.21.0  # Additional cryptographic primitives

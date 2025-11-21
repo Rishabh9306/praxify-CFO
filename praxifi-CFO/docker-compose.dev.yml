@@ -1,0 +1,30 @@
+# Development override for docker-compose.yml
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  aiml-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder  # Use builder stage for development tools
+    volumes:
+      # Mount source code for live reload
+      - ./aiml_engine:/app/aiml_engine:ro
+      - ./tests:/app/tests:ro
+      # Override data volumes for development
+      - ./uploads:/app/uploads
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+    environment:
+      - ENV=development
+      - LOG_LEVEL=debug
+      - PYTHONUNBUFFERED=1
+    command: ["uvicorn", "aiml_engine.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    ports:
+      - "8000:8000"
+    # Remove resource limits in development
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
