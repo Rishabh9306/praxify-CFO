@@ -36,13 +36,13 @@
 
 ## 🎯 Overview
 
-**Praxify CFO** is an enterprise-grade AI/ML platform that acts as an autonomous **Finance Guardian** and **Financial Storyteller** for organizations. It transforms raw financial data into actionable intelligence with cryptographic-level security, providing real-time forecasting, anomaly detection, and conversational AI insights.
+**Praxifi CFO** is an enterprise-grade AI/ML platform that acts as an autonomous **Finance Guardian** and **Financial Storyteller** for organizations. It transforms raw financial data into actionable intelligence with cryptographic-level security, providing real-time forecasting, anomaly detection, and conversational AI insights.
 
-### 🎪 Why Praxify?
+### 🎪 Why Praxifi?
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  Traditional CFO Tools        →        Praxify CFO              │
+│  Traditional CFO Tools        →        Praxifi CFO              │
 ├─────────────────────────────────────────────────────────────────┤
 │  ❌ Manual data entry         →   ✅ Autonomous ingestion      │
 │  ❌ Static reports            →   ✅ Real-time forecasting     │
@@ -864,7 +864,7 @@ Overall                  97%         ✅
 $ python test_api_endpoint.py
 
 ╔══════════════════════════════════════════════════════╗
-║           PRAXIFY CFO - VALIDATION RESULTS           ║
+║           PRAXIFI CFO - VALIDATION RESULTS           ║
 ╚══════════════════════════════════════════════════════╝
 
 ✅ Average Forecast Accuracy:  91.95%
@@ -1187,11 +1187,11 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 | 📖 **Documentation** | [Full Docs](aiml_engine/api/API_DOCUMENTATION.md) |
 | 🐛 **Issues** | [GitHub Issues](https://github.com/Rishabh9306/praxify-CFO/issues) |
 | 💬 **Discussions** | [GitHub Discussions](https://github.com/Rishabh9306/praxify-CFO/discussions) |
-| 📧 **Email** | contact@praxify.com |
+| 📧 **Email** | contact@praxifi.com |
 
 ---
 
-**Built with ❤️ by the Praxify Team**
+**Built with ❤️ by the Praxifi Team**
 
 *Transforming Financial Data into Strategic Intelligence*
 
@@ -1201,12 +1201,12 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 🎓 Citation
 
-If you use Praxify CFO in your research or business, please cite:
+If you use Praxifi CFO in your research or business, please cite:
 
 ```bibtex
-@software{praxify_cfo_2025,
-  title = {Praxify CFO: Enterprise AI-Powered Financial Intelligence Platform},
-  author = {Praxify Team},
+@software{praxifi_cfo_2025,
+  title = {Praxifi CFO: Enterprise AI-Powered Financial Intelligence Platform},
+  author = {Praxifi Team},
   year = {2025},
   url = {https://github.com/Rishabh9306/praxify-CFO},
   version = {1.0}
@@ -1227,7 +1227,7 @@ If you use Praxify CFO in your research or business, please cite:
 ![Powered by FastAPI](https://img.shields.io/badge/Powered%20by-FastAPI-009688.svg)
 ![Secured with Cryptography](https://img.shields.io/badge/Secured%20with-Cryptography-red.svg)
 
-**© 2025 Praxify. All rights reserved.**
+**© 2025 Praxifi. All rights reserved.**
 
 </div>
 
