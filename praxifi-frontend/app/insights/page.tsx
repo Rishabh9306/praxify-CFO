@@ -6,6 +6,7 @@ import { useAppContext } from '@/lib/app-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CorrelationHeatmap } from '@/components/CorrelationHeatmap';
 import { 
   MessageSquare, 
   TrendingUp, 
@@ -179,6 +180,16 @@ export default function InsightsPage() {
 
   const report = (fullReportData as any).full_analysis_report || fullReportData;
 
+  // Debug: Log correlation data availability
+  console.log('🔍 Correlation Debug:', {
+    hasCorrelations: !!report.correlations,
+    hasCorrelationMatrix: !!report.correlations?.correlation_matrix,
+    hasColumns: !!report.correlations?.correlation_matrix?.columns,
+    hasValues: !!report.correlations?.correlation_matrix?.values,
+    columnsLength: report.correlations?.correlation_matrix?.columns?.length,
+    valuesLength: report.correlations?.correlation_matrix?.values?.length
+  });
+
   // Prepare KPIs data
   const kpis = report.kpis || {};
   
@@ -305,42 +316,160 @@ export default function InsightsPage() {
           </Button>
         </div>
 
-        {/* AI-Generated Insights Banner */}
-        {report.narratives && (
-          <Card className="mb-8 bg-gradient-to-r from-primary/20 to-purple-500/20 border-primary/30 backdrop-blur-md">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-primary/20 rounded-lg">
-                  <Brain className="h-6 w-6 text-primary" />
+        {/* AI Summary Section */}
+        {(fullReportData as any).ai_response && (() => {
+          const aiResponseText = (fullReportData as any).ai_response as string;
+          const lines = aiResponseText.split('\n');
+          
+          // Parse content into sections based on ## headers
+          const allSections: { title: string; content: string[] }[] = [];
+          let currentSection: { title: string; content: string[] } | null = null;
+          
+          lines.forEach((line) => {
+            if (line.startsWith('## ')) {
+              if (currentSection) {
+                allSections.push(currentSection);
+              }
+              currentSection = { title: line.replace(/^## /, ''), content: [] };
+            } else if (currentSection) {
+              currentSection.content.push(line);
+            }
+          });
+          
+          if (currentSection) {
+            allSections.push(currentSection);
+          }
+          
+          // Organize sections by column
+          const leftSectionTitles = ['Financial Health Assessment', 'Critical KPIs'];
+          const rightSectionTitles = ['Operational Insights', 'Action Items'];
+          const bottomSectionTitles = ['Model Performance'];
+          
+          const leftSections = allSections.filter(s => 
+            leftSectionTitles.some(title => s.title.toLowerCase().includes(title.toLowerCase()))
+          );
+          const rightSections = allSections.filter(s => 
+            rightSectionTitles.some(title => s.title.toLowerCase().includes(title.toLowerCase()))
+          );
+          const bottomSections = allSections.filter(s => 
+            bottomSectionTitles.some(title => s.title.toLowerCase().includes(title.toLowerCase()))
+          );
+          
+          const renderLine = (line: string, idx: number, forcePoints = false) => {
+            // Empty lines
+            if (line.trim() === '') {
+              return <div key={idx} className="h-0.5" />;
+            }
+            
+            // Parse markdown headers (not affected by forcePoints)
+            if (!forcePoints && line.startsWith('# ')) {
+              return <h1 key={idx} className="text-base font-bold text-white mt-2 mb-1">{line.replace(/^# /, '')}</h1>;
+            }
+            if (!forcePoints && line.startsWith('### ')) {
+              return <h3 key={idx} className="text-sm font-semibold text-white mt-1.5 mb-0.5">{line.replace(/^### /, '')}</h3>;
+            }
+            
+            // For operational insights/action items, treat ALL non-empty lines as bullet points
+            if (forcePoints && line.trim() !== '') {
+              // Remove leading "- " or "• " if present
+              let text = line.trim();
+              if (text.startsWith('- ') || text.startsWith('• ')) {
+                text = text.replace(/^[•\-]\s*/, '');
+              }
+              
+              // Parse bold text
+              const boldParsed = text.split(/(\*\*.*?\*\*)/).map((part, i) => {
+                if (part.startsWith('**') && part.endsWith('**')) {
+                  return <strong key={i} className="font-semibold text-white">{part.slice(2, -2)}</strong>;
+                }
+                return part;
+              });
+              
+              return (
+                <div key={idx} className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5 text-xs flex-shrink-0">•</span>
+                  <span className="text-sm text-white/80">{boldParsed}</span>
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-white mb-2">AI Executive Summary</h3>
-                  <p className="text-white/90 mb-4 whitespace-pre-wrap">
-                    {report.narratives.summary_text || report.narratives.narrative || 'No summary available.'}
-                  </p>
-                  {report.narratives.analyst_insights && report.narratives.analyst_insights.length > 0 && (
-                    <div className="space-y-2">
-                      {report.narratives.analyst_insights.map((insight: string, idx: number) => (
-                        <div key={idx} className="flex items-start gap-2">
-                          <div className="mt-1">
-                            {insight.includes('🚨') || insight.includes('⚠️') ? (
-                              <AlertTriangle className="h-4 w-4 text-yellow-400" />
-                            ) : insight.includes('✅') ? (
-                              <CheckCircle2 className="h-4 w-4 text-green-400" />
-                            ) : (
-                              <Lightbulb className="h-4 w-4 text-primary" />
-                            )}
-                          </div>
-                          <p className="text-sm text-white/80">{insight}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+              );
+            }
+            
+            // Parse bullet points (for non-forcePoints sections)
+            if (line.startsWith('- ') || line.startsWith('• ')) {
+              const text = line.replace(/^[•\-]\s*/, '');
+              const boldParsed = text.split(/(\*\*.*?\*\*)/).map((part, i) => {
+                if (part.startsWith('**') && part.endsWith('**')) {
+                  return <strong key={i} className="font-semibold text-white">{part.slice(2, -2)}</strong>;
+                }
+                return part;
+              });
+              
+              return (
+                <div key={idx} className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5 text-xs flex-shrink-0">•</span>
+                  <span className="text-sm text-white/80">{boldParsed}</span>
                 </div>
+              );
+            }
+            
+            // Parse bold text for regular content
+            const boldParsed = line.split(/(\*\*.*?\*\*)/).map((part, i) => {
+              if (part.startsWith('**') && part.endsWith('**')) {
+                return <strong key={i} className="font-semibold text-white">{part.slice(2, -2)}</strong>;
+              }
+              return part;
+            });
+            // Regular text
+            return <p key={idx} className="text-sm text-white/80">{boldParsed}</p>;
+          };
+          
+          const renderSection = (section: { title: string; content: string[] }, sectionIdx: number, compact = false, asPoints = false) => (
+            <div key={sectionIdx} className={compact ? "mb-2.5" : "mb-3"}>
+              <h2 className="text-sm font-bold text-white mb-1 pb-0.5 border-b border-primary/20 flex items-center gap-1.5">
+                <span className="text-primary">▸</span>
+                {section.title}
+              </h2>
+              <div className={compact ? "space-y-0.5 mt-1" : "space-y-1 mt-1.5"}>
+                {section.content.map((line, lineIdx) => {
+                  const key = sectionIdx * 1000 + lineIdx;
+                  return renderLine(line, key, asPoints);
+                })}
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          );
+          
+          return (
+            <Card className="mb-6 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border-blue-500/30 backdrop-blur-md">
+              <CardContent className="pt-2 pb-2">
+                <div className="flex items-center gap-2.5 mb-2 pb-1.5 border-b border-white/10">
+                  <div className="p-2 bg-blue-500/20 rounded-lg">
+                    <Brain className="h-4 w-4 text-blue-400" />
+                  </div>
+                  <h3 className="text-base font-bold text-white">AI Summary</h3>
+                </div>
+                
+                {/* Two Column Layout */}
+                <div className="grid md:grid-cols-2 gap-5 mb-2">
+                  {/* Left Column: Financial Health & KPIs */}
+                  <div className="space-y-2">
+                    {leftSections.map((section, idx) => renderSection(section, idx, true, false))}
+                  </div>
+                  
+                  {/* Right Column: Operational Insights & Action Items as bullet points */}
+                  <div className="space-y-2">
+                    {rightSections.map((section, idx) => renderSection(section, idx + 100, true, true))}
+                  </div>
+                </div>
+                
+                {/* Bottom Section: Model Performance */}
+                {bottomSections.length > 0 && (
+                  <div className="border-t border-white/10 pt-1.5">
+                    {bottomSections.map((section, idx) => renderSection(section, idx + 200))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* Key KPIs Section */}
         <SectionHeader 
@@ -449,6 +578,10 @@ export default function InsightsPage() {
             <TabsTrigger value="diagnostics" className="data-[state=active]:bg-primary data-[state=active]:text-black">
               <AlertTriangle className="h-4 w-4 mr-2" />
               Diagnostics
+            </TabsTrigger>
+            <TabsTrigger value="correlations" className="data-[state=active]:bg-primary data-[state=active]:text-black">
+              <Activity className="h-4 w-4 mr-2" />
+              Correlations
             </TabsTrigger>
           </TabsList>
 
@@ -560,6 +693,39 @@ export default function InsightsPage() {
               </Card>
             )}
 
+            {/* Analyst Key Insights */}
+            {report.narratives && report.narratives.analyst_insights && report.narratives.analyst_insights.length > 0 && (
+              <Card className="bg-gradient-to-r from-primary/20 to-purple-500/20 border-primary/30 backdrop-blur-md">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <Lightbulb className="h-5 w-5 text-primary" />
+                    Analyst Key Insights
+                  </CardTitle>
+                  <CardDescription className="text-white/60">
+                    Key insights from the analysis
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {report.narratives.analyst_insights.map((insight: string, idx: number) => (
+                      <div key={idx} className="flex items-start gap-3 p-3 bg-white/5 rounded-lg">
+                        <div className="mt-0.5 flex-shrink-0">
+                          {insight.includes('🚨') || insight.includes('⚠️') ? (
+                            <AlertTriangle className="h-5 w-5 text-yellow-400" />
+                          ) : insight.includes('✅') ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-400" />
+                          ) : (
+                            <Lightbulb className="h-5 w-5 text-primary" />
+                          )}
+                        </div>
+                        <p className="text-white/90">{insight}</p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Recommendations */}
             {report.recommendations && report.recommendations.length > 0 && (
               <Card className="bg-gradient-to-r from-green-500/20 to-blue-500/20 border-green-500/30 backdrop-blur-md">
@@ -587,67 +753,69 @@ export default function InsightsPage() {
           </TabsContent>
 
           {/* Forecasts Tab */}
-          <TabsContent value="forecasts" className="space-y-8">
-            {forecastMetrics.map((metric) => {
-              const data = prepareForecastData(metric);
-              if (data.length === 0) return null;
+          <TabsContent value="forecasts" className="space-y-6">
+            <div className="grid lg:grid-cols-2 gap-6">
+              {forecastMetrics.map((metric) => {
+                const data = prepareForecastData(metric);
+                if (data.length === 0) return null;
 
-              return (
-                <Card key={metric} className="bg-white/5 border-white/10 backdrop-blur-md">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white">
-                      <TrendingUp className="h-5 w-5 text-primary" />
-                      {metric.replace(/_/g, ' ').toUpperCase()} Forecast
-                    </CardTitle>
-                    <CardDescription className="text-white/60">
-                      3-month prediction with confidence intervals
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={350}>
-                      <ComposedChart data={data}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                        <XAxis dataKey="date" stroke="#fff" />
-                        <YAxis stroke="#fff" />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: 'rgba(0,0,0,0.9)',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: '8px',
-                            color: '#fff'
-                          }}
-                        />
-                        <Legend />
-                        <Area 
-                          type="monotone" 
-                          dataKey="upper" 
-                          fill="#FFC700" 
-                          fillOpacity={0.1}
-                          stroke="none"
-                          name="Upper Bound"
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="lower" 
-                          fill="#FFC700" 
-                          fillOpacity={0.1}
-                          stroke="none"
-                          name="Lower Bound"
-                        />
-                        <Line 
-                          type="monotone" 
-                          dataKey="forecast" 
-                          stroke="#FFC700" 
-                          strokeWidth={3}
-                          name="Forecast"
-                          dot={{ fill: '#FFC700', r: 5 }}
-                        />
-                      </ComposedChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                return (
+                  <Card key={metric} className="bg-white/5 border-white/10 backdrop-blur-md">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-white">
+                        <TrendingUp className="h-5 w-5 text-primary" />
+                        {metric.replace(/_/g, ' ').toUpperCase()} Forecast
+                      </CardTitle>
+                      <CardDescription className="text-white/60">
+                        3-month prediction with confidence intervals
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <ComposedChart data={data}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                          <XAxis dataKey="date" stroke="#fff" />
+                          <YAxis stroke="#fff" />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: 'rgba(0,0,0,0.9)',
+                              border: '1px solid rgba(255,255,255,0.1)',
+                              borderRadius: '8px',
+                              color: '#fff'
+                            }}
+                          />
+                          <Legend />
+                          <Area 
+                            type="monotone" 
+                            dataKey="upper" 
+                            fill="#FFC700" 
+                            fillOpacity={0.1}
+                            stroke="none"
+                            name="Upper Bound"
+                          />
+                          <Area 
+                            type="monotone" 
+                            dataKey="lower" 
+                            fill="#FFC700" 
+                            fillOpacity={0.1}
+                            stroke="none"
+                            name="Lower Bound"
+                          />
+                          <Line 
+                            type="monotone" 
+                            dataKey="forecast" 
+                            stroke="#FFC700" 
+                            strokeWidth={3}
+                            name="Forecast"
+                            dot={{ fill: '#FFC700', r: 5 }}
+                          />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </TabsContent>
 
           {/* Breakdowns Tab */}
@@ -1012,6 +1180,67 @@ export default function InsightsPage() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          {/* Correlations Tab with Heatmap */}
+          <TabsContent value="correlations" className="space-y-8">
+            {(() => {
+              // Get correlation data from the correct path: full_analysis_report.visualizations.correlations
+              const analysisReport = (fullReportData as any).full_analysis_report || fullReportData;
+              const visualizations = analysisReport.visualizations;
+              const correlationMatrix = visualizations?.correlations?.correlation_matrix;
+              
+              // Debug logging
+              console.log('📊 Heatmap Data Check:', {
+                hasVisualization: !!visualizations,
+                hasCorrelations: !!visualizations?.correlations,
+                hasMatrix: !!correlationMatrix,
+                hasColumns: !!correlationMatrix?.columns,
+                hasValues: !!correlationMatrix?.values,
+                columnsCount: correlationMatrix?.columns?.length,
+                valuesCount: correlationMatrix?.values?.length,
+                fullReportDataKeys: Object.keys(fullReportData || {}),
+                analysisReportKeys: Object.keys(analysisReport || {}),
+                visualizationsKeys: visualizations ? Object.keys(visualizations) : []
+              });
+              
+              if (!correlationMatrix?.columns || !correlationMatrix?.values) {
+                return (
+                  <Card className="bg-white/5 border-white/10 backdrop-blur-md">
+                    <CardContent className="pt-6">
+                      <div className="text-center py-12">
+                        <AlertCircle className="h-12 w-12 text-white/40 mx-auto mb-4" />
+                        <p className="text-white/60 text-lg">No correlation data available</p>
+                        <p className="text-white/40 text-sm mt-2">Correlation matrix was not generated for this dataset</p>
+                        <p className="text-white/20 text-xs mt-4 font-mono">
+                          Debug: Check console for data structure
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              }
+
+              return (
+                <Card className="bg-white/5 border-white/10 backdrop-blur-md">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-white">
+                      <Activity className="h-5 w-5 text-primary" />
+                      Correlation Matrix Heatmap
+                    </CardTitle>
+                    <CardDescription className="text-white/60">
+                      Interactive heatmap showing correlations between {correlationMatrix.columns.length} financial metrics (-1 to +1)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="overflow-x-auto">
+                    <CorrelationHeatmap 
+                      columns={correlationMatrix.columns}
+                      values={correlationMatrix.values}
+                    />
+                  </CardContent>
+                </Card>
+              );
+            })()}
           </TabsContent>
         </Tabs>
 

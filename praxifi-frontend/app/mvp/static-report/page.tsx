@@ -35,6 +35,8 @@ export default function StaticReportPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState<string>('');
+  const [currentStep, setCurrentStep] = useState<string>('');
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -69,18 +71,51 @@ export default function StaticReportPage() {
     }
   }, []);
 
-  const simulateProgress = () => {
-    setProgress(0);
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) {
-          clearInterval(interval);
-          return 90;
-        }
-        return prev + 10;
-      });
-    }, 500);
-    return interval;
+  const connectToProgressStream = (taskId: string) => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const eventSource = new EventSource(`${apiUrl}/api/progress/${taskId}`);
+    
+    // Handle different event types
+    eventSource.addEventListener('connected', (event: Event) => {
+      const messageEvent = event as MessageEvent;
+      const data = JSON.parse(messageEvent.data);
+      console.log('✅ Connected to progress stream:', data);
+    });
+    
+    eventSource.addEventListener('progress', (event: Event) => {
+      try {
+        const messageEvent = event as MessageEvent;
+        const data = JSON.parse(messageEvent.data);
+        console.log('📊 Progress update:', data);
+        setProgress(data.progress || 0);
+        setProgressMessage(data.message || '');
+        setCurrentStep(data.step || '');
+      } catch (err) {
+        console.error('Failed to parse progress data:', err);
+      }
+    });
+    
+    eventSource.addEventListener('heartbeat', (event: Event) => {
+      const messageEvent = event as MessageEvent;
+      const data = JSON.parse(messageEvent.data);
+      console.log('💓 Heartbeat:', data.message);
+    });
+    
+    eventSource.addEventListener('error', (event: Event) => {
+      const messageEvent = event as MessageEvent;
+      const data = JSON.parse(messageEvent.data);
+      console.error('❌ SSE Error:', data.message);
+      setError(data.message);
+      eventSource.close();
+    });
+    
+    eventSource.onerror = (err) => {
+      console.error('❌ EventSource connection error:', err);
+      // Don't close immediately - might be temporary network issue
+      // The backend will send error event if it's a real timeout
+    };
+    
+    return eventSource;
   };
 
   const handleGenerateReport = async () => {
@@ -88,7 +123,11 @@ export default function StaticReportPage() {
     
     setIsLoading(true);
     setError(null);
-    const progressInterval = simulateProgress();
+    setProgress(0);
+    setProgressMessage('Uploading file...');
+    setCurrentStep('upload');
+    
+    let eventSource: EventSource | null = null;
 
     try {
       console.log('🚀 Starting report generation...', { file: file.name, persona, metric });
@@ -117,7 +156,13 @@ export default function StaticReportPage() {
       const data = await response.json();
       console.log('✅ Data parsed successfully, size:', JSON.stringify(data).length, 'bytes');
       
-      setProgress(100);
+      // Start listening to progress updates if task_id is provided
+      if (data.task_id) {
+        console.log('🔌 Connecting to progress stream:', data.task_id);
+        eventSource = connectToProgressStream(data.task_id);
+      } else {
+        setProgress(100);
+      }
       
       // Store in context
       const config: UploadConfig = { persona, forecast_metric: metric };
@@ -129,18 +174,22 @@ export default function StaticReportPage() {
       
       // Navigate to insights after brief delay
       setTimeout(() => {
+        if (eventSource) eventSource.close();
         router.push('/insights');
-      }, 500);
+      }, 1000);
     } catch (err) {
       console.error('💥 Error during report generation:', err);
-      clearInterval(progressInterval);
+      if (eventSource) eventSource.close();
       setProgress(0);
       setError(err instanceof Error ? err.message : 'Failed to generate report');
     } finally {
-      clearInterval(progressInterval);
       if (!error) {
-        setTimeout(() => setIsLoading(false), 500);
+        setTimeout(() => {
+          if (eventSource) eventSource.close();
+          setIsLoading(false);
+        }, 1000);
       } else {
+        if (eventSource) eventSource.close();
         setIsLoading(false);
       }
     }
@@ -317,16 +366,58 @@ export default function StaticReportPage() {
             )}
 
             {isLoading && (
-              <div className="mt-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-white/70">Processing...</span>
-                  <span className="text-sm text-white/70">{progress}%</span>
+              <div className="mt-4 space-y-4">
+                {/* Progress Header */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <span className="text-sm text-white/90 font-medium block">
+                      {progressMessage || 'Processing...'}
+                    </span>
+                    <span className="text-xs text-white/50">
+                      Step: {currentStep || 'initializing'}
+                    </span>
+                  </div>
+                  <span className="text-lg text-white/90 font-mono font-bold">{progress}%</span>
                 </div>
-                <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                
+                {/* Progress Bar */}
+                <div className="relative w-full bg-white/10 rounded-full h-3 overflow-hidden border border-white/20 shadow-lg">
                   <div
-                    className="bg-white h-full transition-all duration-300"
+                    className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 h-full transition-all duration-500 ease-out relative"
                     style={{ width: `${progress}%` }}
-                  />
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
+                  </div>
+                </div>
+                
+                {/* Step Indicators */}
+                <div className="grid grid-cols-5 gap-2 text-xs">
+                  <div className={`p-2 rounded ${currentStep === 'upload' || currentStep === 'validation' ? 'bg-blue-500/20 text-blue-300' : progress >= 15 ? 'bg-green-500/20 text-green-300' : 'bg-white/5 text-white/40'}`}>
+                    <div className="font-medium">Upload</div>
+                    <div className="text-[10px] opacity-70">5-15%</div>
+                  </div>
+                  <div className={`p-2 rounded ${currentStep === 'forecasting' ? 'bg-blue-500/20 text-blue-300' : progress >= 50 ? 'bg-green-500/20 text-green-300' : 'bg-white/5 text-white/40'}`}>
+                    <div className="font-medium">Forecast</div>
+                    <div className="text-[10px] opacity-70">25-50%</div>
+                  </div>
+                  <div className={`p-2 rounded ${currentStep === 'regional' || currentStep === 'departmental' ? 'bg-blue-500/20 text-blue-300' : progress >= 70 ? 'bg-green-500/20 text-green-300' : 'bg-white/5 text-white/40'}`}>
+                    <div className="font-medium">Analysis</div>
+                    <div className="text-[10px] opacity-70">60-70%</div>
+                  </div>
+                  <div className={`p-2 rounded ${currentStep === 'analytics' || currentStep === 'visualizations' ? 'bg-blue-500/20 text-blue-300' : progress >= 90 ? 'bg-green-500/20 text-green-300' : 'bg-white/5 text-white/40'}`}>
+                    <div className="font-medium">Charts</div>
+                    <div className="text-[10px] opacity-70">80-90%</div>
+                  </div>
+                  <div className={`p-2 rounded ${currentStep === 'complete' ? 'bg-blue-500/20 text-blue-300' : progress >= 100 ? 'bg-green-500/20 text-green-300' : 'bg-white/5 text-white/40'}`}>
+                    <div className="font-medium">Done</div>
+                    <div className="text-[10px] opacity-70">95-100%</div>
+                  </div>
+                </div>
+                
+                {/* Live Indicator */}
+                <div className="flex items-center justify-center gap-2 text-xs text-white/50 pt-2 border-t border-white/10">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                  <span>Live progress via Server-Sent Events</span>
                 </div>
               </div>
             )}

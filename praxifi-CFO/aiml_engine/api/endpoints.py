@@ -38,9 +38,13 @@ from aiml_engine.core.privacy_budget import PrivacyBudgetTracker, get_privacy_bu
 # ---
 from aiml_engine.utils.helpers import CustomJSONEncoder, convert_numpy_types
 from dotenv import load_dotenv, find_dotenv
+from sse_starlette.sse import EventSourceResponse
 
 load_dotenv(find_dotenv())
 router = APIRouter(tags=["Agentic CFO Copilot"])
+
+# Progress tracking store (in-memory)
+progress_store: Dict[str, Dict[str, Any]] = {}
 
 # --- NEW INTEGRATION: Agent and Memory Instances ---
 SYSTEM_PROMPT = """
@@ -85,6 +89,64 @@ budget_tracker = get_privacy_budget_tracker(total_budget=privacy_budget_total)
 secure_logger.info("🔒 Security layers initialized: Memory Encryption ✓, Secure Logging ✓, HE Ready ✓, SMPC Ready ✓, ZK Proofs ✓, Privacy Budget Tracking ✓")
 
 # ---
+
+def update_progress(task_id: str, step: str, progress: int, message: str):
+    """Update progress for a specific task"""
+    progress_store[task_id] = {
+        "step": step,
+        "progress": progress,
+        "message": message,
+        "timestamp": datetime.now().isoformat()
+    }
+
+@router.get("/progress/{task_id}")
+async def get_progress(task_id: str):
+    """SSE endpoint for real-time progress updates"""
+    async def event_generator():
+        # Send initial connection message
+        yield {
+            "event": "connected",
+            "data": json.dumps({"message": "Connected to progress stream", "task_id": task_id})
+        }
+        
+        # Track if we've seen any progress yet
+        timeout_counter = 0
+        max_timeout = 120  # 60 seconds timeout (120 * 0.5s)
+        
+        while timeout_counter < max_timeout:
+            if task_id in progress_store:
+                progress_data = progress_store[task_id]
+                yield {
+                    "event": "progress",
+                    "data": json.dumps(progress_data)
+                }
+                
+                # If complete, send final message and stop
+                if progress_data.get("progress", 0) >= 100:
+                    await asyncio.sleep(1)
+                    break
+                
+                # Reset timeout counter since we're getting updates
+                timeout_counter = 0
+            else:
+                # Send heartbeat to keep connection alive
+                if timeout_counter % 10 == 0:  # Every 5 seconds
+                    yield {
+                        "event": "heartbeat",
+                        "data": json.dumps({"message": "Waiting for task to start..."})
+                    }
+                timeout_counter += 1
+            
+            await asyncio.sleep(0.5)  # Poll every 500ms
+        
+        # Timeout reached
+        if timeout_counter >= max_timeout:
+            yield {
+                "event": "error",
+                "data": json.dumps({"message": "Task timeout - no progress updates received"})
+            }
+    
+    return EventSourceResponse(event_generator())
 
 # PARALLEL FORECASTING HELPER
 def _forecast_single_metric(metric: str, df_json: str) -> tuple:
@@ -362,11 +424,18 @@ async def get_full_financial_report(
     - **Receive a full report**: Includes KPIs, 3-month forecasts for all key metrics (revenue, expenses, profit, cashflow, growth_rate), detected anomalies, correlation insights, and narrative summaries.
     - **Choose a persona**: Select `finance_guardian` or `financial_storyteller` to tailor the narrative output.
     """
+    # Generate unique task ID for progress tracking
+    task_id = str(uuid.uuid4())
+    
     # DEBUG: Log request received
-    secure_logger.info(f"📥 FULL_REPORT REQUEST RECEIVED - File: {file.filename}, Mode: {mode}")
+    secure_logger.info(f"📥 FULL_REPORT REQUEST RECEIVED - File: {file.filename}, Mode: {mode}, Task: {task_id}")
+    
+    update_progress(task_id, "upload", 5, "Processing uploaded file...")
     
     processing_results = process_uploaded_file(file)
     featured_df = processing_results["featured_df"]
+    
+    update_progress(task_id, "validation", 15, "Data validated and features engineered")
     
     # ========================================
     # PARALLEL FORECASTING - EXPONENTIAL SPEEDUP
@@ -389,6 +458,8 @@ async def get_full_financial_report(
     # Serialize DataFrame once for all workers (avoid pickling issues)
     df_json = featured_df.to_json(date_format='iso')
     
+    update_progress(task_id, "forecasting", 25, f"Running parallel forecasting for {len(all_metrics_to_forecast)} metrics...")
+    
     # Run parallel forecasting in a thread pool to avoid blocking the event loop
     # This allows healthcheck and other endpoints to respond even during heavy processing
     all_forecasts, all_model_health = await asyncio.to_thread(
@@ -396,6 +467,8 @@ async def get_full_financial_report(
         df_json, 
         all_metrics_to_forecast
     )
+    
+    update_progress(task_id, "forecasting", 50, "Core forecasting complete")
     
     # Calculate growth_rate forecast from revenue forecast
     if 'revenue' in all_forecasts and all_forecasts['revenue']:
@@ -428,6 +501,8 @@ async def get_full_financial_report(
     if 'region' in featured_df.columns:
         regions = featured_df['region'].unique().tolist()
         
+        update_progress(task_id, "regional", 60, f"Forecasting {len(regions)} regions...")
+        
         # Run parallel regional forecasting in a thread pool to avoid blocking the event loop
         regional_forecasts = await asyncio.to_thread(
             _run_parallel_regional_forecasting,
@@ -449,6 +524,8 @@ async def get_full_financial_report(
     if 'department' in featured_df.columns:
         departments = featured_df['department'].unique().tolist()
         
+        update_progress(task_id, "departmental", 70, f"Forecasting {len(departments)} departments...")
+        
         # Run parallel departmental forecasting in a thread pool to avoid blocking the event loop
         dept_forecasts = await asyncio.to_thread(
             _run_parallel_departmental_forecasting,
@@ -467,6 +544,8 @@ async def get_full_financial_report(
             }
     
     # Use revenue for anomaly detection (primary metric)
+    update_progress(task_id, "analytics", 80, "Detecting anomalies and analyzing correlations...")
+    
     anomaly_module = AnomalyDetectionModule()
     anomalies = anomaly_module.detect_anomalies(featured_df, metric='revenue')
     
@@ -476,6 +555,8 @@ async def get_full_financial_report(
     profit_drivers = explainer_module.get_profit_drivers(featured_df)
     
     # Generate comprehensive visualizations
+    update_progress(task_id, "visualizations", 90, "Generating charts and tables...")
+    
     viz_module = VisualizationDataGenerator()
     visualization_data = viz_module.generate_all_charts(featured_df)
     
@@ -585,12 +666,17 @@ All forecast models operational. {len(all_model_health)} metrics forecasted with
     }]
     
     # Assemble final response with proper structure for frontend
+    update_progress(task_id, "complete", 95, "Finalizing report...")
+    
     final_response = {
         "session_id": session_id,
+        "task_id": task_id,  # Include task_id in response
         "ai_response": ai_response_text,
         "conversation_history": conversation_history,
         "full_analysis_report": dashboard_output
     }
+    
+    update_progress(task_id, "complete", 100, "Report generated successfully!")
     
     # ========================================
     # ALL SECURITY LAYERS: Comprehensive Protection

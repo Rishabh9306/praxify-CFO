@@ -105,6 +105,54 @@ export default function ChatPage() {
     }
   };
 
+  // Markdown parser for chat messages
+  const parseMarkdown = (text: string) => {
+    const lines = text.split('\n');
+    
+    return lines.map((line, idx) => {
+      // Parse headers
+      if (line.startsWith('### ')) {
+        return <h3 key={idx} className="text-base font-bold mt-3 mb-1">{line.replace(/^### /, '')}</h3>;
+      }
+      if (line.startsWith('## ')) {
+        return <h2 key={idx} className="text-lg font-bold mt-3 mb-2">{line.replace(/^## /, '')}</h2>;
+      }
+      if (line.startsWith('# ')) {
+        return <h1 key={idx} className="text-xl font-bold mt-4 mb-2">{line.replace(/^# /, '')}</h1>;
+      }
+      
+      // Parse bullet points
+      if (line.startsWith('- ') || line.startsWith('• ') || line.startsWith('* ')) {
+        const content = line.replace(/^[•\-\*]\s*/, '');
+        return (
+          <div key={idx} className="flex items-start gap-2 ml-2 my-1">
+            <span className="text-primary mt-1 text-xs">•</span>
+            <span className="flex-1">{parseBoldAndInline(content)}</span>
+          </div>
+        );
+      }
+      
+      // Empty lines
+      if (line.trim() === '') {
+        return <div key={idx} className="h-2" />;
+      }
+      
+      // Regular text with inline formatting
+      return <p key={idx} className="my-1">{parseBoldAndInline(line)}</p>;
+    });
+  };
+
+  // Parse inline formatting like **bold**
+  const parseBoldAndInline = (text: string) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
+
   if (!agentData) {
     return null;
   }
@@ -147,14 +195,16 @@ export default function ChatPage() {
                       className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className={`max-w-[80%] rounded-lg p-4 ${
+                        className={`max-w-[80%] rounded-xl p-5 ${
                           message.role === 'user'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted text-foreground'
+                            ? 'bg-gradient-to-br from-primary to-primary/90 text-black border border-primary/30 shadow-xl'
+                            : 'bg-gradient-to-br from-blue-500/15 to-purple-500/10 text-white border border-blue-500/30 backdrop-blur-md shadow-2xl'
                         }`}
                       >
-                        <div className="flex items-start gap-2">
-                          <p className="text-sm whitespace-pre-wrap flex-1">{message.content}</p>
+                        <div className="text-sm space-y-2 leading-relaxed">
+                          {message.role === 'assistant' ? parseMarkdown(message.content) : (
+                            <p className="whitespace-pre-wrap font-medium">{message.content}</p>
+                          )}
                         </div>
                       </div>
                     </div>

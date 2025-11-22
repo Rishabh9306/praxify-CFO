@@ -39,6 +39,7 @@ fastapi==0.115.5  # Latest stable with security fixes
 starlette==0.41.3  # Latest - fixes multiple CVEs including multipart DoS
 uvicorn[standard]==0.32.1  # Latest with performance improvements
 python-multipart==0.0.12  # Latest - fixes path traversal and ReDoS vulnerabilities
+sse-starlette==2.1.3  # Server-Sent Events for real-time progress
 
 # === UTILITIES AND OTHER TOOLS ===
 shap==0.45.0
