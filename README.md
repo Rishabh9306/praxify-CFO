@@ -1,6 +1,6 @@
 <div align="center">
 
-![Praxifi](PRAXIFI-TOP.png)
+![Praxifi](PRAXIFI.png)
 
 [![MumbaiHacks](https://img.shields.io/badge/MumbaiHacks-2K25-orange.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/downloads/)
