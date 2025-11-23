@@ -1134,36 +1134,37 @@ export default function InsightsPage() {
                   <CardContent>
                     <div id="revenue-by-region-chart">
                       <ResponsiveContainer width="100%" height={300}>
-                      <RechartsPieChart>
-                        <Pie
-                          data={revenueByRegion}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={100}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {revenueByRegion.map((entry: any, index: number) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: 'rgba(0,0,0,0.9)',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: '8px',
-                            color: '#fff'
-                          }}
-                          itemStyle={{ color: '#fff' }}
-                          formatter={(value: any, name: any, props: any) => [
-                            `$${Number(value).toLocaleString()}`,
-                            props.payload.name
-                          ]}
-                        />
-                      </RechartsPieChart>
-                    </ResponsiveContainer>
+                        <RechartsPieChart>
+                          <Pie
+                            data={revenueByRegion}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            outerRadius={100}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {revenueByRegion.map((entry: any, index: number) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: 'rgba(0,0,0,0.9)',
+                              border: '1px solid rgba(255,255,255,0.1)',
+                              borderRadius: '8px',
+                              color: '#fff'
+                            }}
+                            itemStyle={{ color: '#fff' }}
+                            formatter={(value: any, name: any, props: any) => [
+                              `$${Number(value).toLocaleString()}`,
+                              props.payload.name
+                            ]}
+                          />
+                        </RechartsPieChart>
+                      </ResponsiveContainer>
+                    </div>
                   </CardContent>
                 </Card>
               )}
