@@ -105,5 +105,5 @@ export type ForecastMetric = 'revenue' | 'expenses' | 'profit' | 'cash_flow';
 
 export interface UploadConfig {
   persona: PersonaMode;
-  forecast_metric: ForecastMetric;
+  forecast_metric?: ForecastMetric;
 }

@@ -25,8 +25,10 @@ import {
   Brain,
   Database,
   LineChart as LineChartIcon,
-  Grid3x3
+  Grid3x3,
+  Download
 } from 'lucide-react';
+import { generateFullReportPDF } from '@/lib/pdf-generator';
 import { 
   LineChart, 
   Line, 
@@ -124,6 +126,7 @@ export default function InsightsPage() {
   const { fullReportData, uploadedFile, uploadConfig, setAgentData, addToSessionHistory } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   useEffect(() => {
     if (!fullReportData) {
@@ -171,6 +174,27 @@ export default function InsightsPage() {
       console.error('Failed to launch AI chat:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!fullReportData) return;
+    
+    setIsGeneratingPDF(true);
+    
+    try {
+      const report = (fullReportData as any).full_analysis_report || fullReportData;
+      const mode = report.dashboard_mode || 'finance_guardian';
+      
+      await generateFullReportPDF({
+        fullReportData,
+        mode
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setIsGeneratingPDF(false);
     }
   };
 
@@ -317,9 +341,130 @@ export default function InsightsPage() {
         </div>
 
         {/* AI Summary Section */}
-        {(fullReportData as any).ai_response && (() => {
-          const aiResponseText = (fullReportData as any).ai_response as string;
-          const lines = aiResponseText.split('\n');
+        {((fullReportData as any).ai_response || (fullReportData as any).full_analysis_report?.narratives?.narrative) && (() => {
+          // Inline markdown parser for bold, italic, code
+          const parseInline = (text: string) => {
+            const parts: (string | JSX.Element)[] = [];
+            const regex = /(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`)/g;
+            let lastIndex = 0;
+            let match;
+            let keyCounter = 0;
+            
+            while ((match = regex.exec(text)) !== null) {
+              if (match.index > lastIndex) {
+                parts.push(text.slice(lastIndex, match.index));
+              }
+              
+              if (match[2]) {
+                parts.push(<strong key={keyCounter++} className="font-semibold text-white">{match[2]}</strong>);
+              } else if (match[3]) {
+                parts.push(<em key={keyCounter++} className="italic text-white/90">{match[3]}</em>);
+              } else if (match[4]) {
+                parts.push(<code key={keyCounter++} className="px-1 py-0.5 bg-white/10 rounded text-xs font-mono text-primary">{match[4]}</code>);
+              }
+              
+              lastIndex = regex.lastIndex;
+            }
+            
+            if (lastIndex < text.length) {
+              parts.push(text.slice(lastIndex));
+            }
+            
+            return parts.length > 0 ? parts : text;
+          };
+          
+          // Markdown parser function
+          const parseMarkdown = (text: string) => {
+            const lines = text.split('\n');
+            const elements: JSX.Element[] = [];
+            
+            lines.forEach((line, idx) => {
+              // Skip empty lines with minimal spacing
+              if (line.trim() === '') {
+                elements.push(<div key={idx} className="h-1" />);
+                return;
+              }
+              
+              // Parse headers
+              if (line.startsWith('### ')) {
+                elements.push(
+                  <h3 key={idx} className="text-sm font-semibold text-white mt-2 mb-0.5">
+                    {line.replace(/^### /, '')}
+                  </h3>
+                );
+                return;
+              }
+              if (line.startsWith('## ')) {
+                elements.push(
+                  <h2 key={idx} className="text-base font-bold text-white mt-2.5 mb-1 border-b border-primary/20 pb-0.5">
+                    {line.replace(/^## /, '')}
+                  </h2>
+                );
+                return;
+              }
+              if (line.startsWith('# ')) {
+                elements.push(
+                  <h1 key={idx} className="text-lg font-bold text-white mt-3 mb-1">
+                    {line.replace(/^# /, '')}
+                  </h1>
+                );
+                return;
+              }
+              
+              // Parse bullet points
+              if (line.trim().match(/^[-•*]\s/)) {
+                const text = line.trim().replace(/^[-•*]\s/, '');
+                const parsed = parseInline(text);
+                elements.push(
+                  <div key={idx} className="flex items-start gap-2 my-0.5">
+                    <span className="text-primary mt-0.5 text-xs flex-shrink-0">•</span>
+                    <span className="text-sm text-white/80 leading-snug">{parsed}</span>
+                  </div>
+                );
+                return;
+              }
+              
+              // Regular text with inline formatting
+              const parsed = parseInline(line);
+              elements.push(
+                <p key={idx} className="text-sm text-white/80 my-0.5 leading-snug">
+                  {parsed}
+                </p>
+              );
+            });
+            
+            return elements;
+          };
+          
+          const report = (fullReportData as any).full_analysis_report || {};
+          const dashboardMode = report.dashboard_mode || '';
+          const isStorytellerMode = dashboardMode === 'financial_storyteller';
+          
+          // For storyteller mode, use narrative from full_analysis_report.narratives.narrative
+          if (isStorytellerMode && report.narratives?.narrative) {
+            const narrativeText = report.narratives.narrative;
+            
+            return (
+              <Card className="mb-4 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border-blue-500/30 backdrop-blur-md">
+                <CardContent className="pt-2 pb-2 px-3">
+                  <div className="flex items-center gap-2 mb-2 pb-1 border-b border-white/10">
+                    <div className="p-1.5 bg-blue-500/20 rounded-lg">
+                      <Brain className="h-4 w-4 text-blue-400" />
+                    </div>
+                    <h3 className="text-sm font-bold text-white">AI Summary</h3>
+                  </div>
+                  
+                  <div className="space-y-0">
+                    {parseMarkdown(narrativeText)}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          }
+          
+          // For guardian mode, use existing logic with ai_response
+          const aiSummaryText = (fullReportData as any).ai_response as string;
+          const lines = aiSummaryText.split('\n');
           
           // Parse content into sections based on ## headers
           const allSections: { title: string; content: string[] }[] = [];
@@ -560,6 +705,18 @@ export default function InsightsPage() {
           </>
         )}
 
+        {/* Download PDF Button */}
+        <div className="flex justify-end mb-6">
+          <Button
+            onClick={handleDownloadPDF}
+            disabled={isGeneratingPDF}
+            className="bg-primary hover:bg-primary/90 text-black font-semibold"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {isGeneratingPDF ? 'Generating PDF...' : 'Download Full Report PDF'}
+          </Button>
+        </div>
+
         {/* Main Dashboard Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-12">
           <TabsList className="bg-white/5 border border-white/10 backdrop-blur-md mb-6">
@@ -694,37 +851,163 @@ export default function InsightsPage() {
             )}
 
             {/* Analyst Key Insights */}
-            {report.narratives && report.narratives.analyst_insights && report.narratives.analyst_insights.length > 0 && (
-              <Card className="bg-gradient-to-r from-primary/20 to-purple-500/20 border-primary/30 backdrop-blur-md">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-white">
-                    <Lightbulb className="h-5 w-5 text-primary" />
-                    Analyst Key Insights
-                  </CardTitle>
-                  <CardDescription className="text-white/60">
-                    Key insights from the analysis
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {report.narratives.analyst_insights.map((insight: string, idx: number) => (
-                      <div key={idx} className="flex items-start gap-3 p-3 bg-white/5 rounded-lg">
-                        <div className="mt-0.5 flex-shrink-0">
-                          {insight.includes('🚨') || insight.includes('⚠️') ? (
-                            <AlertTriangle className="h-5 w-5 text-yellow-400" />
-                          ) : insight.includes('✅') ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-400" />
-                          ) : (
-                            <Lightbulb className="h-5 w-5 text-primary" />
-                          )}
-                        </div>
-                        <p className="text-white/90">{insight}</p>
+            {(() => {
+              // Inline markdown parser for bold, italic, code
+              const parseInline = (text: string) => {
+                const parts: (string | JSX.Element)[] = [];
+                const regex = /(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`)/g;
+                let lastIndex = 0;
+                let match;
+                let keyCounter = 0;
+                
+                while ((match = regex.exec(text)) !== null) {
+                  if (match.index > lastIndex) {
+                    parts.push(text.slice(lastIndex, match.index));
+                  }
+                  
+                  if (match[2]) {
+                    parts.push(<strong key={keyCounter++} className="font-semibold text-white">{match[2]}</strong>);
+                  } else if (match[3]) {
+                    parts.push(<em key={keyCounter++} className="italic text-white/90">{match[3]}</em>);
+                  } else if (match[4]) {
+                    parts.push(<code key={keyCounter++} className="px-1 py-0.5 bg-white/10 rounded text-xs font-mono text-primary">{match[4]}</code>);
+                  }
+                  
+                  lastIndex = regex.lastIndex;
+                }
+                
+                if (lastIndex < text.length) {
+                  parts.push(text.slice(lastIndex));
+                }
+                
+                return parts.length > 0 ? parts : text;
+              };
+              
+              // Markdown parser function
+              const parseMarkdown = (text: string) => {
+                const lines = text.split('\n');
+                const elements: JSX.Element[] = [];
+                
+                lines.forEach((line, idx) => {
+                  // Skip empty lines with minimal spacing
+                  if (line.trim() === '') {
+                    elements.push(<div key={idx} className="h-1" />);
+                    return;
+                  }
+                  
+                  // Parse headers
+                  if (line.startsWith('### ')) {
+                    elements.push(
+                      <h3 key={idx} className="text-sm font-semibold text-white mt-2 mb-0.5">
+                        {line.replace(/^### /, '')}
+                      </h3>
+                    );
+                    return;
+                  }
+                  if (line.startsWith('## ')) {
+                    elements.push(
+                      <h2 key={idx} className="text-base font-bold text-white mt-2.5 mb-1 border-b border-primary/20 pb-0.5">
+                        {line.replace(/^## /, '')}
+                      </h2>
+                    );
+                    return;
+                  }
+                  if (line.startsWith('# ')) {
+                    elements.push(
+                      <h1 key={idx} className="text-lg font-bold text-white mt-3 mb-1">
+                        {line.replace(/^# /, '')}
+                      </h1>
+                    );
+                    return;
+                  }
+                  
+                  // Parse bullet points
+                  if (line.trim().match(/^[-•*]\s/)) {
+                    const text = line.trim().replace(/^[-•*]\s/, '');
+                    const parsed = parseInline(text);
+                    elements.push(
+                      <div key={idx} className="flex items-start gap-2 my-0.5">
+                        <span className="text-primary mt-0.5 text-xs flex-shrink-0">•</span>
+                        <span className="text-sm text-white/80 leading-snug">{parsed}</span>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                    );
+                    return;
+                  }
+                  
+                  // Regular text with inline formatting
+                  const parsed = parseInline(line);
+                  elements.push(
+                    <p key={idx} className="text-sm text-white/80 my-0.5 leading-snug">
+                      {parsed}
+                    </p>
+                  );
+                });
+                
+                return elements;
+              };
+              
+              const report = (fullReportData as any).full_analysis_report || {};
+              const dashboardMode = report.dashboard_mode || '';
+              const isStorytellerMode = dashboardMode === 'financial_storyteller';
+              
+              // For storyteller mode, use ai_response; for guardian mode, use analyst_insights
+              if (isStorytellerMode) {
+                const aiResponseText = (fullReportData as any).ai_response as string;
+                if (!aiResponseText) return null;
+                
+                return (
+                  <Card className="mb-4 bg-gradient-to-r from-primary/20 to-purple-500/20 border-primary/30 backdrop-blur-md">
+                    <CardContent className="pt-2 pb-2 px-3">
+                      <div className="flex items-center gap-2 mb-2 pb-1 border-b border-white/10">
+                        <div className="p-1.5 bg-primary/20 rounded-lg">
+                          <Lightbulb className="h-4 w-4 text-primary" />
+                        </div>
+                        <h3 className="text-sm font-bold text-white">Analyst Key Insights</h3>
+                      </div>
+                      
+                      <div className="space-y-0">
+                        {parseMarkdown(aiResponseText)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              } else {
+                // Guardian mode - show analyst_insights array
+                if (!report.narratives?.analyst_insights || report.narratives.analyst_insights.length === 0) {
+                  return null;
+                }
+                
+                return (
+                  <Card className="mb-4 bg-gradient-to-r from-primary/20 to-purple-500/20 border-primary/30 backdrop-blur-md">
+                    <CardContent className="pt-2 pb-2 px-3">
+                      <div className="flex items-center gap-2 mb-2 pb-1 border-b border-white/10">
+                        <div className="p-1.5 bg-primary/20 rounded-lg">
+                          <Lightbulb className="h-4 w-4 text-primary" />
+                        </div>
+                        <h3 className="text-sm font-bold text-white">Analyst Key Insights</h3>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        {report.narratives.analyst_insights.map((insight: string, idx: number) => (
+                          <div key={idx} className="flex items-start gap-2 p-2 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
+                            <div className="mt-0.5 flex-shrink-0">
+                              {insight.includes('🚨') || insight.includes('⚠️') ? (
+                                <AlertTriangle className="h-4 w-4 text-yellow-400" />
+                              ) : insight.includes('✅') ? (
+                                <CheckCircle2 className="h-4 w-4 text-green-400" />
+                              ) : (
+                                <Lightbulb className="h-4 w-4 text-primary" />
+                              )}
+                            </div>
+                            <p className="text-sm text-white/90 leading-snug">{insight}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              }
+            })()}
 
             {/* Recommendations */}
             {report.recommendations && report.recommendations.length > 0 && (
@@ -771,7 +1054,8 @@ export default function InsightsPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <ResponsiveContainer width="100%" height={300}>
+                      <div id={`forecast-chart-${metric}`}>
+                        <ResponsiveContainer width="100%" height={300}>
                         <ComposedChart data={data}>
                           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                           <XAxis dataKey="date" stroke="#fff" />
@@ -811,6 +1095,7 @@ export default function InsightsPage() {
                           />
                         </ComposedChart>
                       </ResponsiveContainer>
+                      </div>
                     </CardContent>
                   </Card>
                 );
@@ -847,7 +1132,8 @@ export default function InsightsPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
+                    <div id="revenue-by-region-chart">
+                      <ResponsiveContainer width="100%" height={300}>
                       <RechartsPieChart>
                         <Pie
                           data={revenueByRegion}
@@ -870,6 +1156,11 @@ export default function InsightsPage() {
                             borderRadius: '8px',
                             color: '#fff'
                           }}
+                          itemStyle={{ color: '#fff' }}
+                          formatter={(value: any, name: any, props: any) => [
+                            `$${Number(value).toLocaleString()}`,
+                            props.payload.name
+                          ]}
                         />
                       </RechartsPieChart>
                     </ResponsiveContainer>

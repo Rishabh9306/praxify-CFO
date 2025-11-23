@@ -6,12 +6,12 @@ import { useAppContext } from '@/lib/app-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Loader2, TrendingUp, DollarSign, AlertTriangle } from 'lucide-react';
+import { Send, Loader2, TrendingUp, DollarSign, AlertTriangle, X, FileText, Paperclip } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function ChatPage() {
   const router = useRouter();
-  const { agentData, uploadedFile, uploadConfig, sessionId, setAgentData, addToSessionHistory } = useAppContext();
+  const { agentData, uploadedFile, uploadConfig, sessionId, setAgentData, addToSessionHistory, setUploadedFile } = useAppContext();
   const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([
     { 
       role: 'assistant', 
@@ -20,19 +20,22 @@ export default function ChatPage() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showReportPanel, setShowReportPanel] = useState(false);
+  const [localFile, setLocalFile] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!agentData) {
-      router.push('/upload');
-      return;
-    }
-
     // Initialize messages from conversation history
     // Backend conversation_history format: [{query_id, summary: {user_query, ai_response, key_kpis}}]
     // Convert to chat format: [{role, content}]
-    if (agentData.conversation_history && agentData.conversation_history.length > 0) {
-      const chatMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+    if (agentData && agentData.conversation_history && agentData.conversation_history.length > 0) {
+      const chatMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [
+        { 
+          role: 'assistant', 
+          content: 'Hello! I\'m your AI Financial Analyst. Ask me anything about the uploaded financial data.' 
+        }
+      ];
       agentData.conversation_history.forEach((item: any) => {
         if (item.summary) {
           chatMessages.push({ role: 'user', content: item.summary.user_query });
@@ -41,23 +44,55 @@ export default function ChatPage() {
       });
       setMessages(chatMessages);
     }
-  }, [agentData, router]);
+  }, [agentData]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = async () => {
-    if (!input.trim() || !uploadedFile || !uploadConfig || !sessionId) return;
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile && selectedFile.name.endsWith('.csv')) {
+      setLocalFile(selectedFile);
+      setUploadedFile(selectedFile);
+    }
+  };
 
-    const userMessage = input.trim();
+  const removeFile = () => {
+    setLocalFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleSendMessage = async () => {
+    // Determine which file to use
+    const fileToUse = localFile || uploadedFile;
+    
+    if (!input.trim() && !fileToUse) {
+      setMessages(prev => [
+        ...prev,
+        { role: 'assistant', content: 'Please upload a CSV file or enter a query.' },
+      ]);
+      return;
+    }
+
+    if (!fileToUse) {
+      setMessages(prev => [
+        ...prev,
+        { role: 'assistant', content: 'Please upload a CSV file first before asking questions.' },
+      ]);
+      return;
+    }
+
+    const userMessage = input.trim() || 'Analyze this file';
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
 
     try {
       const formData = new FormData();
-      formData.append('file', uploadedFile);
+      formData.append('file', fileToUse);
       formData.append('user_query', userMessage);
       if (sessionId) {
         formData.append('session_id', sessionId);
@@ -79,19 +114,32 @@ export default function ChatPage() {
       const aiResponse = data.response || data.ai_response || 'No response received';
       setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
 
+      // Show the report panel with dramatic slide animation
+      if (data.full_analysis_report) {
+        setTimeout(() => setShowReportPanel(true), 300);
+      }
+
       // Update session history
       addToSessionHistory({
         session_id: data.session_id,
         timestamp: new Date().toISOString(),
-        file_name: uploadedFile.name,
+        file_name: fileToUse.name,
         last_query: userMessage,
         data,
       });
+
+      // Clear local file after successful submission
+      if (localFile) {
+        setLocalFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
     } catch (err) {
       console.error('Failed to send message:', err);
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', content: 'Sorry, I encountered an error processing your request.' },
+        { role: 'assistant', content: 'Sorry, I encountered an error processing your request. Please try again.' },
       ]);
     } finally {
       setIsLoading(false);
@@ -144,45 +192,79 @@ export default function ChatPage() {
 
   // Parse inline formatting like **bold**
   const parseBoldAndInline = (text: string) => {
-    const parts = text.split(/(\*\*.*?\*\*)/g);
-    return parts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
+    // More robust inline parser that handles **bold**, *italic*, and `code`.
+    const nodes: React.ReactNode[] = [];
+    let rest = text;
+    let key = 0;
+  const pattern = /(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`)/;
+
+    while (rest.length) {
+      const m = rest.match(pattern);
+      if (!m) {
+        nodes.push(rest);
+        break;
       }
-      return part;
-    });
+
+      const index = m.index ?? 0;
+      if (index > 0) {
+        nodes.push(rest.slice(0, index));
+      }
+
+      if (m[2]) {
+        // **bold**
+        nodes.push(<strong key={key++} className="font-bold">{m[2]}</strong>);
+      } else if (m[3]) {
+        // *italic*
+        nodes.push(<em key={key++} className="italic">{m[3]}</em>);
+      } else if (m[4]) {
+        // `code`
+        nodes.push(<code key={key++} className="bg-muted px-1 rounded">{m[4]}</code>);
+      }
+
+      rest = rest.slice(index + m[0].length);
+    }
+
+    return nodes;
   };
 
-  if (!agentData) {
-    return null;
-  }
-
   // Backend returns forecast_chart as array of {date, predicted, lower, upper}
-  const forecastData = agentData.full_analysis_report?.forecast_chart?.map((item: any) => ({
+  const forecastData = agentData?.full_analysis_report?.forecast_chart?.map((item: any) => ({
     date: item.date,
     forecast: item.predicted,
     lower: item.lower,
     upper: item.upper,
   })) || [];
 
-  const profitDriverData = agentData.full_analysis_report?.profit_drivers?.feature_attributions?.map((driver: any) => ({
+  const profitDriverData = agentData?.full_analysis_report?.profit_drivers?.feature_attributions?.map((driver: any) => ({
     category: driver.feature,
     impact: driver.contribution_score,
   })) || [];
 
   return (
-    <div className="min-h-screen bg-background pt-20 pb-20">
+    <div className="min-h-screen bg-background pt-20 pb-20 relative overflow-hidden">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+      
       <div className="container max-w-7xl mx-auto px-4 h-full flex flex-col">
         <div className="mb-6">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">AI Financial Analyst Chat</h1>
           <p className="text-muted-foreground">
-            Session ID: <span className="font-mono text-sm">{sessionId}</span>
+            {sessionId ? (
+              <>Session ID: <span className="font-mono text-sm">{sessionId}</span></>
+            ) : (
+              'Upload a file to start a session'
+            )}
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6 h-full">
+        <div className={`transition-all duration-500 ${showReportPanel ? 'grid lg:grid-cols-3 gap-6' : 'grid lg:grid-cols-1'} h-full`}>
           {/* Chat Interface */}
-          <div className="lg:col-span-2 flex flex-col h-full">
+          <div className={`transition-all duration-500 ${showReportPanel ? 'lg:col-span-2' : 'lg:col-span-1 max-w-4xl mx-auto w-full'} flex flex-col h-full`}>
             <Card className="flex-1 flex flex-col">
               <CardHeader>
                 <CardTitle>Conversation</CardTitle>
@@ -219,7 +301,48 @@ export default function ChatPage() {
                   <div ref={messagesEndRef} />
                 </div>
 
+                {/* File attachment area */}
+                {(localFile || (!uploadedFile && !sessionId)) && (
+                  <div className="mb-3">
+                    {localFile ? (
+                      <div className="flex items-center gap-2 p-3 bg-muted rounded-lg border">
+                        <FileText className="h-4 w-4 text-primary" />
+                        <span className="text-sm flex-1 truncate">{localFile.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {(localFile.size / 1024).toFixed(1)} KB
+                        </span>
+                        <Button
+                          size="sm"
+                          onClick={removeFile}
+                          className="h-6 w-6 p-0 bg-transparent hover:bg-muted"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full gap-2 border border-border bg-transparent hover:bg-muted"
+                      >
+                        <Paperclip className="h-4 w-4" />
+                        Upload CSV File
+                      </Button>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex gap-2">
+                  {!localFile && (uploadedFile || sessionId) && (
+                    <Button
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isLoading}
+                      title="Attach file"
+                      className="px-3 border border-border bg-transparent hover:bg-muted"
+                    >
+                      <Paperclip className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
@@ -230,7 +353,7 @@ export default function ChatPage() {
                   />
                   <Button
                     onClick={handleSendMessage}
-                    disabled={!input.trim() || isLoading}
+                    disabled={isLoading}
                     className="gap-2"
                   >
                     {isLoading ? (
@@ -244,8 +367,58 @@ export default function ChatPage() {
             </Card>
           </div>
 
-          {/* Context Canvas */}
-          <div className="lg:col-span-1 flex flex-col gap-6 overflow-y-auto">
+          {/* Report Panel - Slides in dramatically from right */}
+          {showReportPanel && agentData && (
+            <div 
+              className="lg:col-span-1 flex flex-col gap-6 overflow-y-auto animate-in slide-in-from-right duration-700"
+              style={{
+                animation: 'slideInFromRight 0.7s ease-out forwards'
+              }}
+            >
+              <style jsx>{`
+                @keyframes slideInFromRight {
+                  from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                  }
+                  to {
+                    transform: translateX(0);
+                    opacity: 1;
+                  }
+                }
+              `}</style>
+              
+              {/* Close button */}
+              <div className="sticky top-20 z-20 flex justify-end bg-transparent p-4">
+                <Button
+                  size="sm"
+                  onClick={() => setShowReportPanel(false)}
+                  className="gap-2 bg-transparent border border-border hover:bg-muted"
+                >
+                  <X className="h-4 w-4" />
+                  Close Report
+                </Button>
+              </div>
+
+              {/* AI Response Box */}
+              {agentData.ai_response && (
+                <Card className="border-2 border-primary/50 shadow-xl">
+                  <CardHeader className="bg-gradient-to-br from-primary/10 to-purple-500/10">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-primary" />
+                      AI Analysis Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="prose prose-sm max-w-none text-sm leading-relaxed">
+                      {parseMarkdown(agentData.ai_response)}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            
+            {/* Context Canvas */}
+            <div className="flex flex-col gap-6">
             {/* KPIs */}
             <Card>
               <CardHeader>
@@ -389,7 +562,9 @@ export default function ChatPage() {
                 </CardContent>
               </Card>
             )}
-          </div>
+            </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

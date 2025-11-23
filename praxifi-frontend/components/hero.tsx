@@ -1,5 +1,6 @@
 "use client"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "./ui/button"
 import { GL } from "./gl"
 import { Sparkles, TrendingUp, ArrowRight, Brain, Zap, Shield, ChevronDown } from "lucide-react"
@@ -19,9 +20,16 @@ export function Hero() {
       
       {/* Branding - Top Left */}
       <div className="absolute top-8 left-8 z-20">
-        <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
-          Praxifi
-        </h2>
+        <Link href="/">
+          <Image 
+            src="/long_logo.png" 
+            alt="Praxifi" 
+            width={151} 
+            height={40}
+            className="h-[35px] md:h-[40px] w-auto"
+            priority
+          />
+        </Link>
       </div>
 
       {/* Content */}

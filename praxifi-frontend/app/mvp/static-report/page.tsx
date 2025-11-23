@@ -22,7 +22,7 @@ import {
   PieChart,
   Activity
 } from 'lucide-react';
-import { PersonaMode, ForecastMetric, UploadConfig } from '@/lib/types';
+import { PersonaMode, UploadConfig } from '@/lib/types';
 
 export default function StaticReportPage() {
   const router = useRouter();
@@ -31,7 +31,6 @@ export default function StaticReportPage() {
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [persona, setPersona] = useState<PersonaMode>('finance_guardian');
-  const [metric, setMetric] = useState<ForecastMetric>('revenue');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -130,12 +129,11 @@ export default function StaticReportPage() {
     let eventSource: EventSource | null = null;
 
     try {
-      console.log('🚀 Starting report generation...', { file: file.name, persona, metric });
+      console.log('🚀 Starting report generation...', { file: file.name, persona });
       
       const formData = new FormData();
       formData.append('file', file);
       formData.append('mode', persona);  // Backend expects 'mode', not 'persona'
-      // Note: forecast_metric is not used by the backend, it forecasts all metrics automatically
 
       const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/full_report`;
       console.log('📡 Calling API:', apiUrl);
@@ -165,7 +163,7 @@ export default function StaticReportPage() {
       }
       
       // Store in context
-      const config: UploadConfig = { persona, forecast_metric: metric };
+      const config: UploadConfig = { persona };
       setUploadedFile(file);
       setUploadConfig(config);
       setFullReportData(data);
@@ -425,7 +423,7 @@ export default function StaticReportPage() {
         </Card>
 
         {/* Configuration */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
+        <div className="mb-8">
           <Card className="bg-white/5 border-white/10 backdrop-blur-md">
             <CardHeader>
               <CardTitle className="text-white">Analysis Persona</CardTitle>
@@ -433,97 +431,45 @@ export default function StaticReportPage() {
                 Choose the AI persona for narrative generation
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <Select value={persona} onValueChange={(v) => setPersona(v as PersonaMode)} disabled={isLoading}>
-                <SelectTrigger id="persona">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="finance_guardian">
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-4 w-4 text-blue-400" />
-                      <span>Finance Guardian</span>
+            <CardContent className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div 
+                  onClick={() => !isLoading && setPersona('finance_guardian')}
+                  className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${
+                    persona === 'finance_guardian' 
+                      ? 'bg-blue-500/20 border-blue-400/50' 
+                      : 'bg-white/5 border-white/10 hover:border-white/30'
+                  } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <Shield className="h-6 w-6 text-blue-400 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-base font-semibold text-white mb-2">Finance Guardian</p>
+                      <p className="text-sm text-white/70 leading-relaxed">
+                        Conservative, risk-focused analysis with technical details and operational recommendations
+                      </p>
                     </div>
-                  </SelectItem>
-                  <SelectItem value="financial_storyteller">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-purple-400" />
-                      <span>Financial Storyteller</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-
-              <div className="space-y-2">
-                <div className="flex items-start gap-2 p-3 bg-white/5 rounded-lg">
-                  <Shield className="h-5 w-5 text-blue-400 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-white">Finance Guardian</p>
-                    <p className="text-xs text-white/60">
-                      Conservative, risk-focused analysis with technical details and operational recommendations
-                    </p>
                   </div>
                 </div>
-                <div className="flex items-start gap-2 p-3 bg-white/5 rounded-lg">
-                  <Sparkles className="h-5 w-5 text-purple-400 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-white">Financial Storyteller</p>
-                    <p className="text-xs text-white/60">
-                      Executive narrative with stakeholder-friendly language and strategic positioning
-                    </p>
+                
+                <div 
+                  onClick={() => !isLoading && setPersona('financial_storyteller')}
+                  className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${
+                    persona === 'financial_storyteller' 
+                      ? 'bg-purple-500/20 border-purple-400/50' 
+                      : 'bg-white/5 border-white/10 hover:border-white/30'
+                  } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <Sparkles className="h-6 w-6 text-purple-400 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-base font-semibold text-white mb-2">Financial Storyteller</p>
+                      <p className="text-sm text-white/70 leading-relaxed">
+                        Executive narrative with stakeholder-friendly language and strategic positioning
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/5 border-white/10 backdrop-blur-md">
-            <CardHeader>
-              <CardTitle className="text-white">Forecast Metric</CardTitle>
-              <CardDescription className="text-white/60">
-                Select primary metric for predictive forecasting
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Select value={metric} onValueChange={(v) => setMetric(v as ForecastMetric)} disabled={isLoading}>
-                <SelectTrigger id="metric">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="revenue">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4 text-green-400" />
-                      <span>Revenue</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="expenses">
-                    <div className="flex items-center gap-2">
-                      <Target className="h-4 w-4 text-red-400" />
-                      <span>Expenses</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="profit">
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-yellow-400" />
-                      <span>Profit</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="cash_flow">
-                    <div className="flex items-center gap-2">
-                      <Activity className="h-4 w-4 text-cyan-400" />
-                      <span>Cash Flow</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-
-              <div className="p-3 bg-white/5 rounded-lg">
-                <p className="text-sm text-white/70">
-                  <strong className="text-white">Selected:</strong> {metric.replace('_', ' ').toUpperCase()}
-                </p>
-                <p className="text-xs text-white/60 mt-1">
-                  The system will generate 3-month forecasts using Prophet & AutoARIMA models
-                </p>
               </div>
             </CardContent>
           </Card>
