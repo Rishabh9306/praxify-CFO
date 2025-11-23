@@ -23,6 +23,9 @@ import {
   Activity
 } from 'lucide-react';
 import { PersonaMode, UploadConfig } from '@/lib/types';
+import { ReportEmailPrompt } from '@/components/ReportEmailPrompt';
+import { generateServerSidePDF } from '@/lib/pdf-generator-server';
+import { sendReportEmail } from '@/lib/email-service';
 
 export default function StaticReportPage() {
   const router = useRouter();
@@ -36,6 +39,8 @@ export default function StaticReportPage() {
   const [progress, setProgress] = useState(0);
   const [progressMessage, setProgressMessage] = useState<string>('');
   const [currentStep, setCurrentStep] = useState<string>('');
+  const [showEmailPrompt, setShowEmailPrompt] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -69,6 +74,43 @@ export default function StaticReportPage() {
       setError('Please upload a valid CSV file');
     }
   }, []);
+
+  const sendPDFEmail = async (reportData: any, email: string) => {
+    try {
+      const report = reportData.full_analysis_report || reportData;
+      const mode = report.dashboard_mode || persona;
+      const reportDate = new Date().toISOString().split('T')[0];
+      
+      console.log('📄 Generating PDF for background email...');
+      
+      // Generate PDF as Blob
+      const pdfBlob = await generateServerSidePDF(report, mode, true);
+      
+      if (!pdfBlob) {
+        console.error('❌ Failed to generate PDF blob');
+        return;
+      }
+      
+      console.log('📧 Sending email in background to:', email);
+      
+      // Send email (non-blocking)
+      const result = await sendReportEmail({
+        to: email,
+        pdfBlob,
+        reportMode: mode,
+        reportDate,
+      });
+      
+      if (result.success) {
+        console.log('✅ Email sent successfully in background!');
+      } else {
+        console.error('❌ Failed to send email:', result.error);
+      }
+    } catch (error) {
+      console.error('❌ Error sending background email:', error);
+      // Don't show error to user since they're already navigated away
+    }
+  };
 
   const connectToProgressStream = (taskId: string) => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -117,7 +159,20 @@ export default function StaticReportPage() {
     return eventSource;
   };
 
-  const handleGenerateReport = async () => {
+  const handleGenerateReportClick = () => {
+    if (!file) return;
+    // Show email prompt before starting
+    setShowEmailPrompt(true);
+  };
+
+  const handleEmailPromptResponse = (email: string | null) => {
+    setPendingEmail(email);
+    setShowEmailPrompt(false);
+    // Start generation immediately after getting response
+    setTimeout(() => handleGenerateReport(email), 100);
+  };
+
+  const handleGenerateReport = async (userEmail: string | null) => {
     if (!file) return;
     
     setIsLoading(true);
@@ -172,9 +227,16 @@ export default function StaticReportPage() {
       setUploadConfig(config);
       setFullReportData(data);
 
-      console.log('🎉 Report stored in context, navigating to insights...');
+      console.log('🎉 Report stored in context');
+      
+      // If user provided email, send PDF automatically
+      if (userEmail) {
+        console.log('📧 Auto-sending PDF to:', userEmail);
+        sendPDFEmail(data, userEmail);
+      }
       
       // Navigate to insights after brief delay
+      console.log('🚀 Navigating to insights...');
       setTimeout(() => {
         if (eventSource) eventSource.close();
         router.push('/insights');
@@ -495,7 +557,7 @@ export default function StaticReportPage() {
                 </div>
               </div>
               <Button
-                onClick={handleGenerateReport}
+                onClick={handleGenerateReportClick}
                 disabled={!file || isLoading}
                 size="sm"
                 className="gap-2 min-w-[200px]"
@@ -593,6 +655,14 @@ export default function StaticReportPage() {
           </Card>
         </div>
       </div>
+
+      {/* Email Prompt Modal */}
+      <ReportEmailPrompt
+        isOpen={showEmailPrompt}
+        onClose={() => setShowEmailPrompt(false)}
+        onProceed={handleEmailPromptResponse}
+        isLoading={false}
+      />
     </div>
   );
 }

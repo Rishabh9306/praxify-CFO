@@ -28,7 +28,9 @@ import {
   Grid3x3,
   Download
 } from 'lucide-react';
-import { generateCompletePDF } from '@/lib/pdf-generator-v2';
+import { generateServerSidePDF } from '@/lib/pdf-generator-server';
+import { sendReportEmail } from '@/lib/email-service';
+import { EmailReportDialog } from '@/components/EmailReportDialog';
 import { 
   LineChart, 
   Line, 
@@ -127,6 +129,8 @@ export default function InsightsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   useEffect(() => {
     if (!fullReportData) {
@@ -183,21 +187,76 @@ export default function InsightsPage() {
   const handleDownloadPDF = async () => {
     if (!fullReportData) return;
     
+    // Show email dialog instead of directly downloading
+    setShowEmailDialog(true);
+  };
+
+  const handleDirectDownload = async () => {
+    if (!fullReportData) return;
+    
     setIsGeneratingPDF(true);
     
     try {
       const report = (fullReportData as any).full_analysis_report || fullReportData;
       const mode = report.dashboard_mode || 'finance_guardian';
       
-      await generateCompletePDF({
-        fullReportData,
-        mode
-      });
+      console.log('🚀 Generating PDF for direct download...');
+      
+      // Generate and download PDF directly
+      await generateServerSidePDF(report, mode, false);
+      
+      console.log('✅ PDF downloaded successfully!');
+      
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Failed to generate PDF. Please try again.');
     } finally {
       setIsGeneratingPDF(false);
+    }
+  };
+
+  const handleSendEmail = async (email: string) => {
+    if (!fullReportData) return;
+    
+    setIsSendingEmail(true);
+    
+    try {
+      const report = (fullReportData as any).full_analysis_report || fullReportData;
+      const mode = report.dashboard_mode || 'finance_guardian';
+      const reportDate = new Date().toISOString().split('T')[0];
+      
+      console.log('🚀 Generating PDF for email...');
+      
+      // Generate PDF as Blob
+      const pdfBlob = await generateServerSidePDF(report, mode, true);
+      
+      if (!pdfBlob) {
+        throw new Error('Failed to generate PDF');
+      }
+      
+      console.log('📧 Sending email to:', email);
+      
+      // Send email
+      const result = await sendReportEmail({
+        to: email,
+        pdfBlob,
+        reportMode: mode,
+        reportDate,
+      });
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send email');
+      }
+      
+      console.log('✅ Email sent successfully!');
+      alert('✅ Report sent successfully! Check your inbox.');
+      setShowEmailDialog(false);
+      
+    } catch (error) {
+      console.error('Error sending report:', error);
+      alert(`Failed to send report: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -626,7 +685,7 @@ export default function InsightsPage() {
           description="Real-time financial health indicators"
         />
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+        <div id="kpi-section" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
           <KPICard
             title="Total Revenue"
             value={kpis.total_revenue || 0}
@@ -1613,6 +1672,15 @@ export default function InsightsPage() {
           </Button>
         </div>
       </div>
+
+      {/* Email Report Dialog */}
+      <EmailReportDialog
+        isOpen={showEmailDialog}
+        onClose={() => setShowEmailDialog(false)}
+        onSend={handleSendEmail}
+        onDownload={handleDirectDownload}
+        isLoading={isSendingEmail}
+      />
     </div>
   );
 }
