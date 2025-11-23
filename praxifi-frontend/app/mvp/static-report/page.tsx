@@ -141,6 +141,9 @@ export default function StaticReportPage() {
       const response = await fetch(apiUrl, {
         method: 'POST',
         body: formData,
+        headers: {
+          'ngrok-skip-browser-warning': 'true',  // Required for ngrok free tier
+        },
       });
 
       console.log('📥 Response received:', response.status, response.statusText);
@@ -154,13 +157,14 @@ export default function StaticReportPage() {
       const data = await response.json();
       console.log('✅ Data parsed successfully, size:', JSON.stringify(data).length, 'bytes');
       
-      // Start listening to progress updates if task_id is provided
-      if (data.task_id) {
-        console.log('🔌 Connecting to progress stream:', data.task_id);
-        eventSource = connectToProgressStream(data.task_id);
-      } else {
+      // Note: EventSource for progress updates disabled due to ngrok SSE limitations
+      // The report generation still works perfectly, just without real-time progress
+      // if (data.task_id) {
+      //   console.log('🔌 Connecting to progress stream:', data.task_id);
+      //   eventSource = connectToProgressStream(data.task_id);
+      // } else {
         setProgress(100);
-      }
+      // }
       
       // Store in context
       const config: UploadConfig = { persona };

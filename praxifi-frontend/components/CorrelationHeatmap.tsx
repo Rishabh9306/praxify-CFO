@@ -161,7 +161,7 @@ export function CorrelationHeatmap({ columns, values, width, height }: Correlati
   }, [columns, values, dimensions.width, dimensions.height]);
 
   return (
-    <div ref={containerRef} className="relative w-full">
+    <div ref={containerRef} className="relative w-full" id="correlation-heatmap">
       <div className="flex justify-center">
         <svg ref={svgRef} className="overflow-visible" />
       </div>

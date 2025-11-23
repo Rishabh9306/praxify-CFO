@@ -28,7 +28,7 @@ import {
   Grid3x3,
   Download
 } from 'lucide-react';
-import { generateFullReportPDF } from '@/lib/pdf-generator';
+import { generateCompletePDF } from '@/lib/pdf-generator-v2';
 import { 
   LineChart, 
   Line, 
@@ -152,6 +152,9 @@ export default function InsightsPage() {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/agent/analyze_and_respond`, {
         method: 'POST',
         body: formData,
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+        },
       });
 
       if (!response.ok) {
@@ -186,7 +189,7 @@ export default function InsightsPage() {
       const report = (fullReportData as any).full_analysis_report || fullReportData;
       const mode = report.dashboard_mode || 'finance_guardian';
       
-      await generateFullReportPDF({
+      await generateCompletePDF({
         fullReportData,
         mode
       });
@@ -344,7 +347,7 @@ export default function InsightsPage() {
         {((fullReportData as any).ai_response || (fullReportData as any).full_analysis_report?.narratives?.narrative) && (() => {
           // Inline markdown parser for bold, italic, code
           const parseInline = (text: string) => {
-            const parts: (string | JSX.Element)[] = [];
+            const parts: (string | React.JSX.Element)[] = [];
             const regex = /(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`)/g;
             let lastIndex = 0;
             let match;
@@ -376,7 +379,7 @@ export default function InsightsPage() {
           // Markdown parser function
           const parseMarkdown = (text: string) => {
             const lines = text.split('\n');
-            const elements: JSX.Element[] = [];
+            const elements: React.JSX.Element[] = [];
             
             lines.forEach((line, idx) => {
               // Skip empty lines with minimal spacing
@@ -854,7 +857,7 @@ export default function InsightsPage() {
             {(() => {
               // Inline markdown parser for bold, italic, code
               const parseInline = (text: string) => {
-                const parts: (string | JSX.Element)[] = [];
+                const parts: (string | React.JSX.Element)[] = [];
                 const regex = /(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`)/g;
                 let lastIndex = 0;
                 let match;
@@ -886,7 +889,7 @@ export default function InsightsPage() {
               // Markdown parser function
               const parseMarkdown = (text: string) => {
                 const lines = text.split('\n');
-                const elements: JSX.Element[] = [];
+                const elements: React.JSX.Element[] = [];
                 
                 lines.forEach((line, idx) => {
                   // Skip empty lines with minimal spacing
@@ -1182,6 +1185,7 @@ export default function InsightsPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
+                    <div id="expenses-by-department-chart">
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={expensesByDepartment}>
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
@@ -1198,6 +1202,7 @@ export default function InsightsPage() {
                         <Bar dataKey="value" fill="#ef4444" radius={[8, 8, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -1215,6 +1220,7 @@ export default function InsightsPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
+                    <div id="profit-by-region-chart">
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={profitByRegion}>
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
@@ -1231,6 +1237,7 @@ export default function InsightsPage() {
                         <Bar dataKey="value" fill="#10b981" radius={[8, 8, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -1248,6 +1255,7 @@ export default function InsightsPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
+                    <div id="revenue-trend-chart">
                     <ResponsiveContainer width="100%" height={300}>
                       <AreaChart data={revenueTrend}>
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
@@ -1265,6 +1273,7 @@ export default function InsightsPage() {
                         <Area type="monotone" dataKey="rolling_avg" stroke="#10b981" fill="#10b981" fillOpacity={0.3} name="Rolling Avg" />
                       </AreaChart>
                     </ResponsiveContainer>
+                    </div>
                   </CardContent>
                 </Card>
               )}

@@ -21,12 +21,8 @@ if ENV == "production":
         "https://api.praxifi.com",   
     ]
 else:
-    # Development CORS
-    ALLOWED_ORIGINS = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:3001",
-    ]
+    # Development CORS - Allow all origins for development with ngrok
+    ALLOWED_ORIGINS = ["*"]  # Allow all origins in development
 
 app.add_middleware(
     CORSMiddleware,
