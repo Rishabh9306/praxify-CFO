@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/lib/app-context';
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,9 @@ export default function StaticReportPage() {
   const [currentStep, setCurrentStep] = useState<string>('');
   const [showEmailPrompt, setShowEmailPrompt] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  
+  // Prevent duplicate requests
+  const requestInProgress = useRef(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -175,6 +178,31 @@ export default function StaticReportPage() {
   const handleGenerateReport = async (userEmail: string | null) => {
     if (!file) return;
     
+    // Double-check: Prevent duplicate requests even across component remounts
+    const activeRequestKey = 'praxifi_active_request';
+    const existingRequest = localStorage.getItem(activeRequestKey);
+    
+    if (requestInProgress.current || existingRequest) {
+      // Check if the existing request is stale (>15 minutes old)
+      const requestAge = existingRequest ? Date.now() - parseInt(existingRequest) : 0;
+      const fifteenMinutes = 15 * 60 * 1000;
+      
+      if (requestAge < fifteenMinutes) {
+        console.warn('⚠️ Request already in progress, ignoring duplicate', {
+          ref: requestInProgress.current,
+          localStorage: existingRequest,
+          ageMinutes: (requestAge / 60000).toFixed(1)
+        });
+        return;
+      } else {
+        console.warn('🔄 Stale request detected (>15min old), allowing new request');
+      }
+    }
+    
+    // Set both flags
+    requestInProgress.current = true;
+    localStorage.setItem(activeRequestKey, Date.now().toString());
+    
     setIsLoading(true);
     setError(null);
     setProgress(0);
@@ -184,28 +212,30 @@ export default function StaticReportPage() {
     let eventSource: EventSource | null = null;
 
     try {
-      console.log('🚀 Starting report generation...', { file: file.name, persona });
+      // Generate unique request ID to track this specific request
+      const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log('🚀 Starting report generation...', { 
+        file: file.name, 
+        persona,
+        requestId 
+      });
       
       const formData = new FormData();
       formData.append('file', file);
       formData.append('mode', persona);  // Backend expects 'mode', not 'persona'
 
       const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/full_report`;
-      console.log('📡 Calling API:', apiUrl);
+      console.log('📡 Calling API:', apiUrl, 'RequestID:', requestId);
 
-      // Create an AbortController to prevent duplicate requests
-      const controller = new AbortController();
-      
-      // No timeout - allow unlimited time for large datasets
+      // NO timeout - let it run as long as needed
       const response = await fetch(apiUrl, {
         method: 'POST',
         body: formData,
         headers: {
           'ngrok-skip-browser-warning': 'true',  // Required for ngrok free tier
+          'X-Request-ID': requestId,  // Track this specific request
         },
-        signal: controller.signal,
-        // Keep connection alive for long-running requests
-        keepalive: true,
+        // No signal, no timeout - just wait for response
       });
 
       console.log('📥 Response received:', response.status, response.statusText);
@@ -254,6 +284,10 @@ export default function StaticReportPage() {
       setProgress(0);
       setError(err instanceof Error ? err.message : 'Failed to generate report');
     } finally {
+      // Clean up both flags
+      requestInProgress.current = false;
+      localStorage.removeItem('praxifi_active_request');
+      
       if (!error) {
         setTimeout(() => {
           if (eventSource) eventSource.close();
