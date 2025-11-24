@@ -217,8 +217,8 @@ export async function generateServerSidePDF(
         const tableData = forecastData.slice(0, 10).map((item: any) => [
           item.date || item.month || item.period || 'N/A',
           item.predicted?.toFixed(2) || 'N/A',
-          item.lower_bound?.toFixed(2) || 'N/A',
-          item.upper_bound?.toFixed(2) || 'N/A'
+          item.lower?.toFixed(2) || 'N/A',
+          item.upper?.toFixed(2) || 'N/A'
         ]);
 
         autoTable(pdf, {
@@ -254,7 +254,7 @@ export async function generateServerSidePDF(
       
       const tableData = breakdowns.revenue_by_region.map((item: any) => [
         item.region || item.name,
-        `$${item.revenue?.toLocaleString() || item.value?.toLocaleString() || 0}`
+        `$${item.total_revenue?.toLocaleString() || item.revenue?.toLocaleString() || item.value?.toLocaleString() || 0}`
       ]);
 
       autoTable(pdf, {
@@ -282,7 +282,7 @@ export async function generateServerSidePDF(
       
       const tableData = breakdowns.expenses_by_department.map((item: any) => [
         item.department || item.name,
-        `$${item.expenses?.toLocaleString() || item.value?.toLocaleString() || 0}`
+        `$${item.total_expenses?.toLocaleString() || item.expenses?.toLocaleString() || item.value?.toLocaleString() || 0}`
       ]);
 
       autoTable(pdf, {
@@ -310,7 +310,7 @@ export async function generateServerSidePDF(
       
       const tableData = breakdowns.profit_by_region.map((item: any) => [
         item.region || item.name,
-        `$${item.profit?.toLocaleString() || item.value?.toLocaleString() || 0}`
+        `$${item.total_profit?.toLocaleString() || item.profit?.toLocaleString() || item.value?.toLocaleString() || 0}`
       ]);
 
       autoTable(pdf, {
@@ -481,9 +481,43 @@ export async function generateServerSidePDF(
     pdf.text('Model Health Report', margin, currentY);
     currentY += 10;
     
+    // Helper function to recursively format values
+    const formatValue = (val: any, depth: number = 0): string => {
+      if (val === null || val === undefined) return 'N/A';
+      
+      if (typeof val === 'number') {
+        return val.toFixed(4);
+      }
+      
+      if (typeof val === 'boolean') {
+        return val ? 'Yes' : 'No';
+      }
+      
+      if (Array.isArray(val)) {
+        if (val.length === 0) return 'N/A';
+        return val.map(v => formatValue(v, depth + 1)).join(', ');
+      }
+      
+      if (typeof val === 'object') {
+        // Recursively format nested objects
+        const entries = Object.entries(val);
+        if (entries.length === 0) return 'N/A';
+        
+        return entries
+          .map(([k, v]) => {
+            const formattedKey = k.replace(/_/g, ' ');
+            const formattedVal = formatValue(v, depth + 1);
+            return `${formattedKey}: ${formattedVal}`;
+          })
+          .join('; ');
+      }
+      
+      return String(val);
+    };
+    
     const healthData = Object.entries(data.model_health_report).map(([key, value]) => [
       key.replace(/_/g, ' ').toUpperCase(),
-      typeof value === 'number' ? value.toFixed(4) : String(value)
+      formatValue(value)
     ]);
 
     autoTable(pdf, {
@@ -491,10 +525,24 @@ export async function generateServerSidePDF(
       head: [['Metric', 'Value']],
       body: healthData,
       theme: 'grid',
-      headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255] },
+      headStyles: { 
+        fillColor: [15, 23, 42], 
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 10
+      },
       alternateRowStyles: { fillColor: [248, 250, 252] },
       margin: { left: margin, right: margin },
-      styles: { fontSize: 10 }
+      styles: { 
+        fontSize: 9,
+        cellPadding: 3,
+        overflow: 'linebreak',
+        cellWidth: 'wrap'
+      },
+      columnStyles: {
+        0: { cellWidth: 60, fontStyle: 'bold' },
+        1: { cellWidth: 'auto' }
+      }
     });
 
     currentY = (pdf as any).lastAutoTable.finalY + 10;
