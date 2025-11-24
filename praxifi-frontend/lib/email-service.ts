@@ -23,7 +23,7 @@ export async function sendReportEmail(data: EmailData): Promise<{ success: boole
     // Prepare email payload
     const emailPayload = {
       to: data.to,
-      from: 'onboarding@resend.dev',
+      from: 'noreply@praxifi.com',
       subject: `Your Praxifi Financial Report - ${data.reportDate}`,
       html: generateEmailHTML(data.reportMode, data.reportDate),
       attachments: [

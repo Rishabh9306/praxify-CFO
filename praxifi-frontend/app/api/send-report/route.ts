@@ -62,12 +62,27 @@ export async function POST(request: NextRequest) {
 
     // MailerSend returns 202 on success
     if (response.status === 202) {
-      const data = await response.json();
+      // Try to parse JSON response, but handle empty body gracefully
+      let data: any = {};
+      const responseText = await response.text();
+      
+      if (responseText && responseText.trim()) {
+        try {
+          data = JSON.parse(responseText);
+        } catch (e) {
+          console.log('⚠️ Could not parse response body, but email was sent (202)');
+        }
+      }
+      
+      // Get message ID from response header or body
+      const messageId = response.headers.get('x-message-id') || data.message_id || `mailersend-${Date.now()}`;
+      
       console.log('✅ Email sent successfully via MailerSend');
+      console.log('📨 Message ID:', messageId);
       
       return NextResponse.json({
         success: true,
-        messageId: data.message_id || `mailersend-${Date.now()}`,
+        messageId: messageId,
       });
     }
 

@@ -87,4 +87,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:8080/', timeout=5)" || exit 1
 
 # Default command to run the FastAPI application
-CMD ["sh", "-c", "uvicorn aiml_engine.api.app:app --host 0.0.0.0 --port ${API_PORT:-8080}"]
+# --timeout-keep-alive: Increased to 30 minutes for long-running requests (large datasets)
+# --timeout-graceful-shutdown: Allow 60 seconds for graceful shutdown
+CMD ["sh", "-c", "uvicorn aiml_engine.api.app:app --host 0.0.0.0 --port ${API_PORT:-8080} --timeout-keep-alive 1800 --timeout-graceful-shutdown 60"]

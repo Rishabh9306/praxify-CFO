@@ -12,6 +12,12 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://unpompous-nonextensible-richelle.ngrok-free.dev',
   },
+  // Increase timeout for long-running API requests (for large datasets)
+  experimental: {
+    proxyTimeout: 0, // No timeout
+  },
+  // Server-side fetch timeout configuration
+  serverExternalPackages: [],
 }
 
 export default nextConfig

@@ -193,12 +193,19 @@ export default function StaticReportPage() {
       const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/full_report`;
       console.log('📡 Calling API:', apiUrl);
 
+      // Create an AbortController to prevent duplicate requests
+      const controller = new AbortController();
+      
+      // No timeout - allow unlimited time for large datasets
       const response = await fetch(apiUrl, {
         method: 'POST',
         body: formData,
         headers: {
           'ngrok-skip-browser-warning': 'true',  // Required for ngrok free tier
         },
+        signal: controller.signal,
+        // Keep connection alive for long-running requests
+        keepalive: true,
       });
 
       console.log('📥 Response received:', response.status, response.statusText);
