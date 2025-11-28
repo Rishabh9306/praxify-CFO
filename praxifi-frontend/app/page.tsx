@@ -30,8 +30,8 @@ export default function Home() {
   const features = [
     {
       icon: Upload,
-      title: "Smart Data Ingestion",
-      description: "Upload any CSV format. Our NLP engine automatically maps columns to standardized financial schemas.",
+      title: "Autonomous Ingestion",
+      description: "Bulk upload multiple CSVs with intelligent merging, 50+ column synonyms, and automatic normalization.",
       href: "/upload",
       color: "text-blue-500",
       gradient: "from-blue-500/20 to-blue-500/5"
@@ -39,7 +39,7 @@ export default function Home() {
     {
       icon: LineChart,
       title: "Predictive Forecasting",
-      description: "Prophet & AutoARIMA models compete to deliver the most accurate 3-month financial projections.",
+      description: "Prophet & AutoARIMA models deliver 3-month forecasts across 14 metrics with confidence intervals.",
       href: "/upload",
       color: "text-green-500",
       gradient: "from-green-500/20 to-green-500/5"
@@ -47,7 +47,7 @@ export default function Home() {
     {
       icon: AlertTriangle,
       title: "Anomaly Detection",
-      description: "Isolation Forest & IQR algorithms automatically flag unusual patterns and outliers in real-time.",
+      description: "6-algorithm ensemble with confidence scoring and multi-metric analysis across financial KPIs.",
       href: "/upload",
       color: "text-orange-500",
       gradient: "from-orange-500/20 to-orange-500/5"
@@ -55,7 +55,7 @@ export default function Home() {
     {
       icon: MessageSquare,
       title: "Conversational AI",
-      description: "Chat with your data using Google Gemini 2.5 Pro. Persistent memory tracks entire conversation context.",
+      description: "Chat with your data using Gemini 2.5 Pro. 24-hour session persistence tracks conversation context.",
       href: "/upload",
       color: "text-purple-500",
       gradient: "from-purple-500/20 to-purple-500/5"
@@ -63,15 +63,15 @@ export default function Home() {
     {
       icon: GitBranch,
       title: "Scenario Simulation",
-      description: "Test what-if scenarios instantly. See real-time impact on KPIs with ±100% parameter adjustments.",
+      description: "Test what-if scenarios instantly with real-time KPI impact calculations and sensitivity analysis.",
       href: "/simulate",
       color: "text-pink-500",
       gradient: "from-pink-500/20 to-pink-500/5"
     },
     {
       icon: Brain,
-      title: "Explainable AI",
-      description: "SHAP analysis reveals which features drive your profitability with transparent feature attributions.",
+      title: "Profit Driver Analysis",
+      description: "SHAP explainability reveals top 5 profit drivers with quantified feature contributions.",
       href: "/upload",
       color: "text-cyan-500",
       gradient: "from-cyan-500/20 to-cyan-500/5"
@@ -81,21 +81,21 @@ export default function Home() {
   const capabilities = [
     {
       icon: TrendingUp,
-      title: "Multi-Model Forecasting",
-      description: "AutoARIMA vs Prophet model competition ensures optimal prediction accuracy for your time series",
-      stats: "99% accuracy"
+      title: "Parallel Forecasting",
+      description: "14 metrics forecasted simultaneously with 26-layer parallel processing for 4.7x speedup",
+      stats: "91.95% accuracy"
     },
     {
       icon: Sparkles,
       title: "Dual-Persona Narratives",
-      description: "Finance Guardian for risk analysis or Financial Storyteller for executive presentations",
+      description: "Finance Guardian mode for internal analysis or Financial Storyteller for executive insights",
       stats: "2 AI modes"
     },
     {
       icon: Shield,
-      title: "Enterprise Security",
-      description: "Non-root Docker containers, network policies, rate limiting, and secret management built-in",
-      stats: "Production-ready"
+      title: "8-Layer Security",
+      description: "AES-256 encryption, zero-knowledge proofs, differential privacy, and GDPR compliance",
+      stats: "Enterprise-grade"
     }
   ]
 
@@ -111,12 +111,12 @@ export default function Home() {
   ]
 
   const benefits = [
-    "Autonomous data normalization with NLP",
-    "Real-time anomaly detection and alerting",
-    "Conversational analysis with 24hr memory",
-    "Multi-model forecasting competition",
-    "SHAP-powered feature attribution",
-    "Instant what-if scenario testing"
+    "Bulk CSV upload with intelligent merging",
+    "37+ KPIs with regional breakdowns",
+    "Multi-metric anomaly detection",
+    "6-algorithm ensemble with confidence scoring",
+    "SHAP profit driver analysis",
+    "Instant scenario simulation testing"
   ]
 
   return (
@@ -210,7 +210,7 @@ export default function Home() {
               Modern Tech Stack
             </h2>
             <p className="text-muted-foreground text-base md:text-lg lg:text-xl max-w-3xl mx-auto">
-              Production-ready infrastructure with Docker, Kubernetes, and enterprise-grade security
+              Production-ready infrastructure with 8-layer security and real-time processing
             </p>
           </div>
 
@@ -263,7 +263,7 @@ export default function Home() {
                   </div>
                   <h3 className="text-2xl font-bold mb-3">Upload & Configure</h3>
                   <p className="text-muted-foreground text-base leading-relaxed">
-                    Drop your CSV file and select analysis mode (Finance Guardian or Financial Storyteller) and forecast metric
+                    Upload single or multiple CSV files. Select persona mode and forecast metric for customized analysis
                   </p>
                 </div>
               </Card>
@@ -276,7 +276,7 @@ export default function Home() {
                   </div>
                   <h3 className="text-2xl font-bold mb-3">AI Processing</h3>
                   <p className="text-muted-foreground text-base leading-relaxed">
-                    NLP engine normalizes your data, runs forecasting models, detects anomalies, and generates insights
+                    Intelligent column mapping, parallel forecasting across 14 metrics, 6-algorithm anomaly detection, and SHAP analysis
                   </p>
                 </div>
               </Card>
@@ -289,7 +289,7 @@ export default function Home() {
                   </div>
                   <h3 className="text-2xl font-bold mb-3">Interactive Analysis</h3>
                   <p className="text-muted-foreground text-base leading-relaxed">
-                    Chat with your data using conversational AI or explore static dashboards with KPIs, charts, and narratives
+                    Converse with AI agent or explore comprehensive dashboard with 37+ KPIs, visualizations, and AI narratives
                   </p>
                 </div>
               </Card>
@@ -302,7 +302,7 @@ export default function Home() {
                   </div>
                   <h3 className="text-2xl font-bold mb-3">Scenario Testing</h3>
                   <p className="text-muted-foreground text-base leading-relaxed">
-                    Run what-if simulations, review session history, and export insights for strategic decision-making
+                    Run instant what-if simulations, access session history, and download insights for strategic decisions
                   </p>
                 </div>
               </Card>

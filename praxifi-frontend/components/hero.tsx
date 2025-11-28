@@ -22,7 +22,7 @@ export function Hero() {
       <div className="absolute top-8 left-8 z-20">
         <Link href="/">
           <Image 
-            src="/long_logo.png" 
+            src="/praxifi-text.svg" 
             alt="Praxifi" 
             width={151} 
             height={40}

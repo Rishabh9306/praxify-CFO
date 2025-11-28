@@ -57,9 +57,11 @@ import {
 // Color palette for charts
 const COLORS = ['#FFC700', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 const SEVERITY_COLORS = {
+  critical: '#dc2626',
   high: '#ef4444',
   medium: '#f59e0b',
-  low: '#10b981'
+  low: '#10b981',
+  info: '#6366f1'
 };
 
 interface KPICardProps {
@@ -874,39 +876,344 @@ export default function InsightsPage() {
 
             {/* Anomalies Table */}
             {report.anomalies_table && report.anomalies_table.length > 0 && (
-              <Card className="bg-white/5 border-white/10 backdrop-blur-md">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-white">
-                    <AlertTriangle className="h-5 w-5 text-yellow-400" />
-                    Detected Anomalies
-                  </CardTitle>
-                  <CardDescription className="text-white/60">
-                    Unusual patterns requiring attention
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                    {report.anomalies_table.map((anomaly: any, idx: number) => (
-                      <div key={idx} className="p-4 border border-white/10 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
-                        <div className="flex justify-between items-start mb-2">
-                          <p className="font-semibold text-white">{anomaly.metric?.toUpperCase()}</p>
-                          <span className={`text-xs px-3 py-1 rounded-full font-medium`}
-                            style={{ 
-                              backgroundColor: `${SEVERITY_COLORS[anomaly.severity as keyof typeof SEVERITY_COLORS]}20`,
-                              color: SEVERITY_COLORS[anomaly.severity as keyof typeof SEVERITY_COLORS]
-                            }}>
-                            {anomaly.severity?.toUpperCase()}
-                          </span>
+              <Card className="bg-gradient-to-br from-white/5 to-white/10 border-white/10 backdrop-blur-md shadow-2xl">
+                <CardHeader className="border-b border-white/10 pb-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-3 text-white text-2xl">
+                        <div className="p-2 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg shadow-lg">
+                          <AlertTriangle className="h-6 w-6 text-white" />
                         </div>
-                        <p className="text-sm text-white/70 mb-1">{anomaly.date}</p>
-                        <p className="text-sm text-white/90">
-                          Deviation: <span className="font-bold">{anomaly.deviation_percent?.toFixed(1)}%</span>
-                        </p>
-                        {anomaly.description && (
-                          <p className="text-xs text-white/60 mt-2">{anomaly.description}</p>
-                        )}
+                        Anomaly Detection Dashboard
+                      </CardTitle>
+                      <CardDescription className="text-white/70 mt-2 text-sm">
+                        🤖 AI-powered 6-algorithm ensemble • Real-time confidence scoring • Multi-metric analysis
+                      </CardDescription>
+                    </div>
+                    <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                      <span className="text-xs text-white/70 font-medium">Live Detection</span>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div className="relative p-4 bg-gradient-to-br from-slate-500/20 to-slate-600/10 border border-white/20 rounded-xl overflow-hidden group hover:scale-105 transition-transform">
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform" />
+                      <p className="text-xs text-white/60 mb-1 font-medium uppercase tracking-wider">Total Detected</p>
+                      <p className="text-3xl font-black text-white relative z-10">{report.anomalies_table.length}</p>
+                      <div className="mt-1 text-[10px] text-white/40">anomalies found</div>
+                    </div>
+                    <div className="relative p-4 bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded-xl overflow-hidden group hover:scale-105 transition-transform shadow-lg shadow-red-500/10">
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/10 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform" />
+                      <p className="text-xs text-red-300 mb-1 font-medium uppercase tracking-wider">Critical</p>
+                      <p className="text-3xl font-black text-red-400 relative z-10">
+                        {report.anomalies_table.filter((a: any) => 
+                          (a.severity_level || a.severity)?.toLowerCase() === 'critical'
+                        ).length}
+                      </p>
+                      <div className="mt-1 text-[10px] text-red-300/60">requires immediate action</div>
+                    </div>
+                    <div className="relative p-4 bg-gradient-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/30 rounded-xl overflow-hidden group hover:scale-105 transition-transform shadow-lg shadow-orange-500/10">
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-orange-500/10 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform" />
+                      <p className="text-xs text-orange-300 mb-1 font-medium uppercase tracking-wider">High Priority</p>
+                      <p className="text-3xl font-black text-orange-400 relative z-10">
+                        {report.anomalies_table.filter((a: any) => 
+                          (a.severity_level || a.severity)?.toLowerCase() === 'high'
+                        ).length}
+                      </p>
+                      <div className="mt-1 text-[10px] text-orange-300/60">needs attention soon</div>
+                    </div>
+                    <div className="relative p-4 bg-gradient-to-br from-blue-500/20 to-purple-600/10 border border-blue-500/30 rounded-xl overflow-hidden group hover:scale-105 transition-transform shadow-lg shadow-blue-500/10">
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform" />
+                      <p className="text-xs text-blue-300 mb-1 font-medium uppercase tracking-wider">Avg Confidence</p>
+                      <p className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 relative z-10">
+                        {report.anomalies_table[0]?.confidence 
+                          ? `${(report.anomalies_table.reduce((sum: number, a: any) => sum + (a.confidence || 0), 0) / report.anomalies_table.length * 100).toFixed(0)}%`
+                          : 'N/A'
+                        }
+                      </p>
+                      <div className="mt-1 text-[10px] text-blue-300/60">ensemble accuracy</div>
+                    </div>
+                  </div>
+
+                  {/* Anomaly Cards */}
+                  <div className="space-y-3 max-h-[700px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+                    {[...report.anomalies_table]
+                      .sort((a: any, b: any) => {
+                        // Sort by severity_level first (critical > high > medium > low > info)
+                        const severityOrder: { [key: string]: number } = { 
+                          'critical': 0, 
+                          'high': 1, 
+                          'medium': 2, 
+                          'low': 3, 
+                          'info': 4 
+                        };
+                        const aSeverity = (a.severity_level || a.severity || 'low').toLowerCase().trim();
+                        const bSeverity = (b.severity_level || b.severity || 'low').toLowerCase().trim();
+                        const aOrder = severityOrder[aSeverity] !== undefined ? severityOrder[aSeverity] : 5;
+                        const bOrder = severityOrder[bSeverity] !== undefined ? severityOrder[bSeverity] : 5;
+                        const severityDiff = aOrder - bOrder;
+                        
+                        // If same severity, sort by confidence (higher first)
+                        if (severityDiff === 0) {
+                          return (b.confidence || 0) - (a.confidence || 0);
+                        }
+                        return severityDiff;
+                      })
+                      .map((anomaly: any, idx: number) => {
+                        const severity = (anomaly.severity_level || anomaly.severity || 'low').toLowerCase();
+                        const confidence = anomaly.confidence || 0;
+                        const hasEnsembleData = anomaly.detection_methods || anomaly.algorithms_agreed;
+                        
+                        return (
+                          <div 
+                            key={idx} 
+                            className="relative p-5 border rounded-xl bg-gradient-to-br from-white/5 to-white/3 backdrop-blur-sm"
+                            style={{
+                              borderLeftWidth: '4px',
+                              borderColor: `${SEVERITY_COLORS[severity as keyof typeof SEVERITY_COLORS]}30`,
+                              borderLeftColor: SEVERITY_COLORS[severity as keyof typeof SEVERITY_COLORS],
+                              boxShadow: `0 2px 10px ${SEVERITY_COLORS[severity as keyof typeof SEVERITY_COLORS]}10`
+                            }}
+                          >
+                            {/* Header Row */}
+                            <div className="flex justify-between items-start mb-3">
+                              <div className="flex items-center gap-3">
+                                <div 
+                                  className="p-2.5 rounded-lg"
+                                  style={{ 
+                                    backgroundColor: `${SEVERITY_COLORS[severity as keyof typeof SEVERITY_COLORS]}20`
+                                  }}
+                                >
+                                  <AlertTriangle 
+                                    className="h-4 w-4" 
+                                    style={{ 
+                                      color: SEVERITY_COLORS[severity as keyof typeof SEVERITY_COLORS]
+                                    }}
+                                  />
+                                </div>
+                                <div>
+                                  <p className="font-bold text-white text-lg tracking-tight">
+                                    {anomaly.metric?.replace(/_/g, ' ').toUpperCase()}
+                                  </p>
+                                  <p className="text-xs text-white/50 mt-0.5">
+                                    {anomaly.date}
+                                  </p>
+                                </div>
+                              </div>
+                              <span 
+                                className="text-xs px-3 py-1.5 rounded-lg font-bold uppercase tracking-wide"
+                                style={{ 
+                                  backgroundColor: `${SEVERITY_COLORS[severity as keyof typeof SEVERITY_COLORS]}25`,
+                                  color: SEVERITY_COLORS[severity as keyof typeof SEVERITY_COLORS],
+                                  border: `1.5px solid ${SEVERITY_COLORS[severity as keyof typeof SEVERITY_COLORS]}40`
+                                }}
+                              >
+                                {severity}
+                              </span>
+                            </div>
+
+                            {/* Metrics Grid */}
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                              <div className="p-4 bg-gradient-to-br from-white/10 to-white/5 rounded-xl border border-white/20 hover:border-white/30 transition-colors">
+                                <p className="text-xs text-white/60 mb-1.5 font-medium uppercase tracking-wide">Actual Value</p>
+                                <p className="text-2xl font-black text-white">
+                                  {typeof anomaly.value === 'number' 
+                                    ? `$${anomaly.value.toLocaleString()}` 
+                                    : anomaly.value}
+                                </p>
+                              </div>
+                              <div className="p-4 bg-gradient-to-br from-white/5 to-white/3 rounded-xl border border-white/10 hover:border-white/20 transition-colors">
+                                <p className="text-xs text-white/60 mb-1.5 font-medium uppercase tracking-wide">Expected Value</p>
+                                <p className="text-2xl font-black text-white/70">
+                                  {typeof anomaly.expected_value_mean === 'number'
+                                    ? `$${anomaly.expected_value_mean.toLocaleString()}`
+                                    : anomaly.expected_value_mean || 'N/A'}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Deviation Bar */}
+                            <div className="mb-4">
+                              <div className="flex justify-between items-center mb-2">
+                                <span className="text-xs text-white/60 font-medium uppercase tracking-wide">Deviation Impact</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-lg font-black" style={{
+                                    color: SEVERITY_COLORS[severity as keyof typeof SEVERITY_COLORS]
+                                  }}>
+                                    {(anomaly.deviation_pct || anomaly.deviation_percent || 0).toFixed(1)}%
+                                  </span>
+                                  {anomaly.direction && (
+                                    <span 
+                                      className="px-2 py-1 rounded-lg text-xs font-bold"
+                                      style={{
+                                        backgroundColor: `${SEVERITY_COLORS[severity as keyof typeof SEVERITY_COLORS]}20`,
+                                        color: SEVERITY_COLORS[severity as keyof typeof SEVERITY_COLORS]
+                                      }}
+                                    >
+                                      {anomaly.direction === 'spike' ? '↑ SPIKE' : '↓ DROP'}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="relative w-full h-3 bg-white/10 rounded-full overflow-hidden shadow-inner">
+                                <div 
+                                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse"
+                                />
+                                <div 
+                                  className="h-full rounded-full transition-all duration-700 shadow-lg"
+                                  style={{ 
+                                    width: `${Math.min(Math.abs(anomaly.deviation_pct || anomaly.deviation_percent || 0), 100)}%`,
+                                    background: `linear-gradient(90deg, ${SEVERITY_COLORS[severity as keyof typeof SEVERITY_COLORS]} 0%, ${SEVERITY_COLORS[severity as keyof typeof SEVERITY_COLORS]}80 100%)`,
+                                    boxShadow: `0 0 15px ${SEVERITY_COLORS[severity as keyof typeof SEVERITY_COLORS]}60`
+                                  }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Ensemble Detection Info */}
+                            {hasEnsembleData && (
+                              <div className="p-4 bg-gradient-to-r from-blue-500/15 to-purple-500/10 border border-blue-500/30 rounded-xl mb-4 backdrop-blur-sm">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className="p-1.5 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg shadow-lg">
+                                      <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                    </div>
+                                    <span className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-purple-300">
+                                      Ensemble Detection
+                                    </span>
+                                  </div>
+                                  {anomaly.algorithms_agreed && (
+                                    <span className="px-3 py-1 bg-gradient-to-r from-blue-500/30 to-purple-500/30 text-blue-300 rounded-lg border border-blue-400/40 text-sm font-black font-mono shadow-lg">
+                                      {anomaly.algorithms_agreed}
+                                    </span>
+                                  )}
+                                </div>
+                                {anomaly.detection_methods && (
+                                  <div className="flex flex-wrap gap-2">
+                                    {anomaly.detection_methods.map((method: string, i: number) => (
+                                      <span 
+                                        key={i}
+                                        className="text-xs px-3 py-1.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-300 rounded-lg border border-blue-500/40 font-mono font-medium hover:from-blue-500/30 hover:to-purple-500/30 transition-all shadow-sm"
+                                      >
+                                        {method.replace(/_/g, '-')}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Description/Reason */}
+                            {(anomaly.reason || anomaly.description) && (
+                              <div className="p-4 bg-gradient-to-br from-white/10 to-white/5 rounded-xl border border-white/20 backdrop-blur-sm">
+                                <div className="flex items-start gap-3">
+                                  <div className="mt-1 p-1.5 bg-yellow-500/20 rounded-lg">
+                                    <svg className="h-4 w-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                  </div>
+                                  <p className="text-sm text-white/80 leading-relaxed flex-1">
+                                    {anomaly.reason || anomaly.description}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Context Info */}
+                            {anomaly.context && Object.keys(anomaly.context).length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-white/10">
+                                <p className="text-xs text-white/50 mb-2.5 font-medium uppercase tracking-wide">Analysis Context</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {anomaly.context.volatility !== undefined && (
+                                    <span className="text-xs px-3 py-1.5 bg-gradient-to-r from-purple-500/15 to-pink-500/10 text-purple-300 rounded-lg border border-purple-500/30 font-medium shadow-sm">
+                                      📊 Volatility: {(anomaly.context.volatility * 100).toFixed(0)}%
+                                    </span>
+                                  )}
+                                  {anomaly.context.multiplier !== undefined && (
+                                    <span className="text-xs px-3 py-1.5 bg-gradient-to-r from-purple-500/15 to-pink-500/10 text-purple-300 rounded-lg border border-purple-500/30 font-medium shadow-sm">
+                                      🎯 Threshold: {anomaly.context.multiplier.toFixed(1)}×
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* No Anomalies Detected State */}
+            {report.anomalies_table && report.anomalies_table.length === 0 && (
+              <Card className="bg-gradient-to-br from-white/5 to-white/10 border-white/10 backdrop-blur-md shadow-2xl">
+                <CardHeader className="border-b border-white/10 pb-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-3 text-white text-2xl">
+                        <div className="p-2 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg shadow-lg">
+                          <AlertTriangle className="h-6 w-6 text-white" />
+                        </div>
+                        Anomaly Detection Dashboard
+                      </CardTitle>
+                      <CardDescription className="text-white/70 mt-2 text-sm">
+                        🤖 AI-powered 6-algorithm ensemble • Real-time confidence scoring • Multi-metric analysis
+                      </CardDescription>
+                    </div>
+                    <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                      <span className="text-xs text-white/70 font-medium">All Clear</span>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  {/* Empty State Message */}
+                  <div className="flex flex-col items-center justify-center py-16 px-8">
+                    <div className="relative mb-6">
+                      <div className="absolute inset-0 bg-green-500/20 rounded-full blur-2xl" />
+                      <div className="relative p-6 bg-gradient-to-br from-green-500/20 to-emerald-600/10 border border-green-500/30 rounded-full">
+                        <svg 
+                          className="h-16 w-16 text-green-400" 
+                          fill="none" 
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor"
+                        >
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2} 
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" 
+                          />
+                        </svg>
                       </div>
-                    ))}
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-3">No Anomalies Detected</h3>
+                    <p className="text-white/60 text-center max-w-md mb-6">
+                      Your financial data appears healthy and within expected parameters. Our AI ensemble of 6 algorithms found no irregularities in the current dataset.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-2xl">
+                      <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-center">
+                        <div className="text-2xl font-bold text-green-400 mb-1">✓</div>
+                        <div className="text-xs text-white/50 uppercase tracking-wider mb-1">Status</div>
+                        <div className="text-sm font-semibold text-white">All Systems Normal</div>
+                      </div>
+                      <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-center">
+                        <div className="text-2xl font-bold text-blue-400 mb-1">6</div>
+                        <div className="text-xs text-white/50 uppercase tracking-wider mb-1">Algorithms</div>
+                        <div className="text-sm font-semibold text-white">Monitoring Active</div>
+                      </div>
+                      <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-center">
+                        <div className="text-2xl font-bold text-purple-400 mb-1">0</div>
+                        <div className="text-xs text-white/50 uppercase tracking-wider mb-1">Flags</div>
+                        <div className="text-sm font-semibold text-white">No Issues Found</div>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

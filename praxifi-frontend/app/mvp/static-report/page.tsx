@@ -31,7 +31,7 @@ export default function StaticReportPage() {
   const router = useRouter();
   const { setUploadedFile, setUploadConfig, setFullReportData } = useAppContext();
   
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [persona, setPersona] = useState<PersonaMode>('finance_guardian');
   const [isLoading, setIsLoading] = useState(false);
@@ -59,22 +59,125 @@ export default function StaticReportPage() {
     e.preventDefault();
     setIsDragging(false);
     
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && droppedFile.name.endsWith('.csv')) {
-      setFile(droppedFile);
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    const csvFiles = droppedFiles.filter(file => file.name.endsWith('.csv'));
+    
+    if (csvFiles.length > 0) {
+      setFiles(prevFiles => [...prevFiles, ...csvFiles]);
       setError(null);
     } else {
-      setError('Please upload a valid CSV file');
+      setError('Please upload valid CSV files');
     }
   }, []);
 
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile && selectedFile.name.endsWith('.csv')) {
-      setFile(selectedFile);
-      setError(null);
-    } else {
-      setError('Please upload a valid CSV file');
+  // Schema validation helper
+  const validateSchemas = async (filesToCheck: File[]): Promise<{ valid: boolean; message?: string }> => {
+    if (filesToCheck.length < 2) {
+      return { valid: true };
+    }
+
+    try {
+      const schemas: { fileName: string; headers: string[] }[] = [];
+
+      // Read headers from each file
+      for (const file of filesToCheck) {
+        const text = await file.text();
+        const lines = text.split('\n').filter(line => line.trim());
+        if (lines.length === 0) {
+          return { 
+            valid: false, 
+            message: `File "${file.name}" is empty or invalid` 
+          };
+        }
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        schemas.push({ fileName: file.name, headers });
+      }
+
+      // Compare all schemas with the first one
+      const baseSchema = schemas[0];
+      for (let i = 1; i < schemas.length; i++) {
+        const currentSchema = schemas[i];
+        
+        // Check if headers match
+        if (baseSchema.headers.length !== currentSchema.headers.length) {
+          return {
+            valid: false,
+            message: `Schema mismatch: "${baseSchema.fileName}" has ${baseSchema.headers.length} columns, but "${currentSchema.fileName}" has ${currentSchema.headers.length} columns`
+          };
+        }
+
+        // Check for missing or extra columns
+        const missingInCurrent = baseSchema.headers.filter(h => !currentSchema.headers.includes(h));
+        const extraInCurrent = currentSchema.headers.filter(h => !baseSchema.headers.includes(h));
+
+        if (missingInCurrent.length > 0 || extraInCurrent.length > 0) {
+          let details = [];
+          if (missingInCurrent.length > 0) {
+            details.push(`Missing columns in "${currentSchema.fileName}": ${missingInCurrent.join(', ')}`);
+          }
+          if (extraInCurrent.length > 0) {
+            details.push(`Extra columns in "${currentSchema.fileName}": ${extraInCurrent.join(', ')}`);
+          }
+          return {
+            valid: false,
+            message: `Schema mismatch between "${baseSchema.fileName}" and "${currentSchema.fileName}". ${details.join('. ')}`
+          };
+        }
+      }
+
+      return { valid: true };
+    } catch (error) {
+      return {
+        valid: false,
+        message: `Error reading files: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  };
+
+  const handleFileInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = e.target.files ? Array.from(e.target.files) : [];
+    const csvFiles = selectedFiles.filter(file => file.name.endsWith('.csv'));
+    
+    if (csvFiles.length === 0) {
+      setError('Please upload valid CSV files');
+      e.target.value = '';
+      return;
+    }
+
+    // Combine with existing files for schema validation
+    const allFiles = [...files, ...csvFiles];
+
+    // Validate schemas if multiple files
+    if (allFiles.length > 1) {
+      const validation = await validateSchemas(allFiles);
+      if (!validation.valid) {
+        setError(validation.message || 'Schema validation failed');
+        e.target.value = '';
+        return;
+      }
+    }
+
+    setFiles(allFiles);
+    setError(null);
+    
+    // Reset input value to allow re-selecting the same file
+    e.target.value = '';
+  }, [files]);
+
+  const removeFile = useCallback((index: number) => {
+    setFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
+    
+    // Reset the file input to allow re-uploading
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  }, []);
+
+  const handleAddMoreFiles = useCallback(() => {
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
     }
   }, []);
 
@@ -163,7 +266,7 @@ export default function StaticReportPage() {
   };
 
   const handleGenerateReportClick = () => {
-    if (!file) return;
+    if (files.length === 0) return;
     // Show email prompt before starting
     setShowEmailPrompt(true);
   };
@@ -176,7 +279,7 @@ export default function StaticReportPage() {
   };
 
   const handleGenerateReport = async (userEmail: string | null) => {
-    if (!file) return;
+    if (files.length === 0) return;
     
     // Double-check: Prevent duplicate requests even across component remounts
     const activeRequestKey = 'praxifi_active_request';
@@ -206,7 +309,7 @@ export default function StaticReportPage() {
     setIsLoading(true);
     setError(null);
     setProgress(0);
-    setProgressMessage('Uploading file...');
+    setProgressMessage(files.length > 1 ? `Uploading ${files.length} files...` : 'Uploading file...');
     setCurrentStep('upload');
     
     let eventSource: EventSource | null = null;
@@ -215,13 +318,17 @@ export default function StaticReportPage() {
       // Generate unique request ID to track this specific request
       const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       console.log('🚀 Starting report generation...', { 
-        file: file.name, 
+        fileCount: files.length,
+        files: files.map(f => f.name),
         persona,
         requestId 
       });
       
       const formData = new FormData();
-      formData.append('file', file);
+      // Append all files to FormData
+      files.forEach((file, index) => {
+        formData.append('files', file);
+      });
       formData.append('mode', persona);  // Backend expects 'mode', not 'persona'
 
       const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/full_report`;
@@ -258,9 +365,9 @@ export default function StaticReportPage() {
         setProgress(100);
       // }
       
-      // Store in context
+      // Store in context (use first file for context compatibility)
       const config: UploadConfig = { persona };
-      setUploadedFile(file);
+      setUploadedFile(files[0]);
       setUploadConfig(config);
       setFullReportData(data);
 
@@ -367,11 +474,11 @@ export default function StaticReportPage() {
                   <h3 className="font-semibold text-white text-base">Anomaly Detection</h3>
                 </div>
                 <p className="text-sm text-white/60 leading-relaxed mb-3">
-                  Multi-method detection (Z-score, IQR, Isolation Forest) with severity classification and context-aware flagging.
+                  6-algorithm ensemble with confidence scoring, severity classification, and multi-metric analysis across financial KPIs.
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  <span className="text-[10px] px-2 py-0.5 bg-red-500/10 text-red-300 rounded-full border border-red-500/20">Critical Alerts</span>
-                  <span className="text-[10px] px-2 py-0.5 bg-red-500/10 text-red-300 rounded-full border border-red-500/20">Real-Time</span>
+                  <span className="text-[10px] px-2 py-0.5 bg-red-500/10 text-red-300 rounded-full border border-red-500/20">Ensemble AI</span>
+                  <span className="text-[10px] px-2 py-0.5 bg-red-500/10 text-red-300 rounded-full border border-red-500/20">Multi-Metric</span>
                 </div>
               </CardContent>
             </Card>
@@ -561,7 +668,7 @@ export default function StaticReportPage() {
               Upload Financial Data
             </CardTitle>
             <CardDescription className="text-white/50 text-sm">
-              CSV with 24+ months • Auto-normalized • 50+ column synonyms supported
+              CSV with 24+ months • Multiple files supported • Auto-merged • 50+ column synonyms
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -582,21 +689,54 @@ export default function StaticReportPage() {
                 className="hidden"
                 id="file-upload"
                 disabled={isLoading}
+                multiple
               />
               <label htmlFor="file-upload" className="cursor-pointer">
                 <div className="flex flex-col items-center gap-4">
-                  {file ? (
+                  {files.length > 0 ? (
                     <>
                       <FileSpreadsheet className="h-16 w-16 text-white" />
-                      <div>
-                        <p className="font-semibold text-lg text-white">{file.name}</p>
-                        <p className="text-sm text-white/60">
-                          {(file.size / 1024).toFixed(2)} KB
+                      <div className="w-full">
+                        <p className="font-semibold text-lg text-white mb-2">
+                          {files.length} file{files.length > 1 ? 's' : ''} selected
+                        </p>
+                        <div className="max-h-40 overflow-y-auto space-y-2 mb-4">
+                          {files.map((file, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-2 bg-white/5 rounded-lg border border-white/10"
+                            >
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <FileSpreadsheet className="h-4 w-4 text-white/60 flex-shrink-0" />
+                                <span className="text-sm text-white/80 truncate">{file.name}</span>
+                                <span className="text-xs text-white/50 flex-shrink-0">
+                                  ({(file.size / 1024).toFixed(1)} KB)
+                                </span>
+                              </div>
+                              {!isLoading && (
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    removeFile(index);
+                                  }}
+                                  className="ml-2 p-1 hover:bg-red-500/20 rounded transition-colors flex-shrink-0"
+                                  type="button"
+                                >
+                                  <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-white/50 mb-2">
+                          Total size: {(files.reduce((sum, f) => sum + f.size, 0) / 1024).toFixed(2)} KB
                         </p>
                       </div>
                       {!isLoading && (
-                        <Button size="sm" variant="glass" type="button">
-                          Change File
+                        <Button size="sm" variant="glass" type="button" onClick={handleAddMoreFiles}>
+                          Add More Files
                         </Button>
                       )}
                     </>
@@ -604,8 +744,8 @@ export default function StaticReportPage() {
                     <>
                       <Upload className="h-16 w-16 text-white/60" />
                       <div>
-                        <p className="font-semibold text-lg text-white">Drop your CSV file here</p>
-                        <p className="text-sm text-white/60">or click to browse</p>
+                        <p className="font-semibold text-lg text-white">Drop your CSV files here</p>
+                        <p className="text-sm text-white/60">or click to browse • Multiple files supported</p>
                       </div>
                     </>
                   )}
@@ -770,7 +910,7 @@ export default function StaticReportPage() {
               </div>
               <Button
                 onClick={handleGenerateReportClick}
-                disabled={!file || isLoading}
+                disabled={files.length === 0 || isLoading}
                 size="default"
                 className="gap-2 min-w-[220px] h-12 text-base font-medium relative overflow-hidden
                   before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent
@@ -819,7 +959,7 @@ export default function StaticReportPage() {
                 <li className="flex items-start gap-2.5 text-white/70">
                   <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
                   <div>
-                    <span className="font-medium text-white">Anomaly Detection:</span> Z-score, IQR, Isolation Forest with severity classification (LOW/MEDIUM/HIGH/CRITICAL)
+                    <span className="font-medium text-white">Anomaly Detection:</span> 6-algorithm ensemble with confidence scoring, 5 severity levels (CRITICAL/HIGH/MEDIUM/LOW/INFO), and multi-metric analysis across 10+ financial KPIs
                   </div>
                 </li>
                 <li className="flex items-start gap-2.5 text-white/70">

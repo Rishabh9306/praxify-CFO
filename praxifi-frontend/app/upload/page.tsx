@@ -184,23 +184,23 @@ export default function UploadPage() {
                 <ul className="space-y-1 text-xs text-white/60">
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-3 w-3 text-green-400" />
-                    8+ KPI metrics dashboard
+                    37+ KPI metrics dashboard
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-3 w-3 text-green-400" />
-                    3-month predictive forecasting
+                    14 metrics 3-month forecasting
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-3 w-3 text-green-400" />
-                    Anomaly detection & analysis
+                    Multi-metric anomaly detection
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-3 w-3 text-green-400" />
-                    SHAP-based profit drivers
+                    SHAP profit driver analysis
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-3 w-3 text-green-400" />
-                    AI narratives & recommendations
+                    AI narratives & insights
                   </li>
                 </ul>
               </div>

@@ -220,14 +220,20 @@ class VisualizationDataGenerator:
                 
                 # Add regression line
                 if len(scatter_data) >= 2:
-                    slope, intercept, r_value, _, _ = stats.linregress(
-                        scatter_data['Marketing Spend'], scatter_data['revenue']
-                    )
-                    correlations['revenue_vs_marketing_regression'] = {
-                        "slope": float(slope),
-                        "intercept": float(intercept),
-                        "r_squared": float(r_value ** 2)
-                    }
+                    # Check if values have variance (not all identical)
+                    if scatter_data['Marketing Spend'].nunique() > 1 and scatter_data['revenue'].nunique() > 1:
+                        try:
+                            slope, intercept, r_value, _, _ = stats.linregress(
+                                scatter_data['Marketing Spend'], scatter_data['revenue']
+                            )
+                            correlations['revenue_vs_marketing_regression'] = {
+                                "slope": float(slope),
+                                "intercept": float(intercept),
+                                "r_squared": float(r_value ** 2)
+                            }
+                        except (ValueError, Exception):
+                            # Skip regression if calculation fails
+                            pass
         
         # AR vs Cashflow Scatter
         if 'ar' in df.columns and 'cashflow' in df.columns:
@@ -250,14 +256,20 @@ class VisualizationDataGenerator:
                 ]
                 
                 if len(scatter_data) >= 2:
-                    slope, intercept, r_value, _, _ = stats.linregress(
-                        scatter_data['assets'], scatter_data['profit']
-                    )
-                    correlations['profit_vs_assets_regression'] = {
-                        "slope": float(slope),
-                        "intercept": float(intercept),
-                        "r_squared": float(r_value ** 2)
-                    }
+                    # Check if x values have variance (not all identical)
+                    if scatter_data['assets'].nunique() > 1 and scatter_data['profit'].nunique() > 1:
+                        try:
+                            slope, intercept, r_value, _, _ = stats.linregress(
+                                scatter_data['assets'], scatter_data['profit']
+                            )
+                            correlations['profit_vs_assets_regression'] = {
+                                "slope": float(slope),
+                                "intercept": float(intercept),
+                                "r_squared": float(r_value ** 2)
+                            }
+                        except (ValueError, Exception):
+                            # Skip regression if calculation fails
+                            pass
         
         # Regional Correlation Segmentation
         if 'region' in df.columns and len(numeric_cols) >= 2:

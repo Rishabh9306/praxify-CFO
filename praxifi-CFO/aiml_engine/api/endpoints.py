@@ -17,7 +17,8 @@ from aiml_engine.core.data_ingestion import DataIngestion
 from aiml_engine.core.data_validation import DataValidationQualityAssuranceEngine
 from aiml_engine.core.feature_engineering import KPIAutoExtractionDynamicFeatureEngineering
 from aiml_engine.core.forecasting import ForecastingModule
-from aiml_engine.core.anomaly_detection import AnomalyDetectionModule
+# Enhanced anomaly detection with 6-algorithm ensemble
+from aiml_engine.core.anomaly_detection_v2 import AnomalyDetectionModule
 from aiml_engine.core.correlation import CrossMetricCorrelationTrendMiningEngine
 from aiml_engine.core.simulation import ScenarioSimulationEngine
 from aiml_engine.core.dashboard import BusinessDashboardOutputLayer
@@ -333,6 +334,93 @@ def process_uploaded_file(file: UploadFile):
             except:
                 pass
 
+def process_uploaded_files(files: list[UploadFile]):
+    """
+    Process multiple uploaded CSV files and merge them into a single dataset.
+    Files are merged chronologically after individual processing.
+    All security layers (encryption, logging, ZK validation) are applied.
+    """
+    if not files:
+        raise HTTPException(status_code=400, detail="No files uploaded")
+    
+    secure_logger.info(f"🔀 Processing {len(files)} files for merge")
+    
+    all_dataframes = []
+    combined_reports = {
+        "validation_reports": [],
+        "corrections_logs": [],
+        "feature_schemas": []
+    }
+    
+    # Process each file individually with full security
+    for idx, file in enumerate(files):
+        try:
+            secure_logger.info(f"📄 Processing file {idx + 1}/{len(files)}: {file.filename}")
+            result = process_uploaded_file(file)
+            
+            # Extract the processed DataFrame
+            df = result["featured_df"]
+            
+            # Store the DataFrame and reports
+            all_dataframes.append(df)
+            combined_reports["validation_reports"].append(result["reports"]["validation_report"])
+            combined_reports["corrections_logs"].append(result["reports"]["corrections_log"])
+            combined_reports["feature_schemas"].append(result["reports"]["feature_schema"])
+            
+        except Exception as e:
+            secure_logger.error(f"❌ Failed to process file {file.filename}: {str(e)}")
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Failed to process file '{file.filename}': {str(e)}"
+            )
+    
+    # Merge all DataFrames chronologically
+    try:
+        secure_logger.info(f"🔗 Merging {len(all_dataframes)} datasets...")
+        
+        # Concatenate all DataFrames
+        merged_df = pd.concat(all_dataframes, ignore_index=True)
+        
+        # Sort by date column if it exists
+        if 'date' in merged_df.columns:
+            merged_df = merged_df.sort_values('date').reset_index(drop=True)
+        
+        # Remove duplicate rows (same date and values)
+        if 'date' in merged_df.columns:
+            # Keep last occurrence of duplicate dates (assumes later file is more recent/correct)
+            merged_df = merged_df.drop_duplicates(subset=['date'], keep='last').reset_index(drop=True)
+        
+        secure_logger.info(f"✅ Successfully merged into {len(merged_df)} rows from {len(files)} files")
+        
+        # Log successful merge with security redaction
+        secure_logger.log_data_processing(
+            operation="bulk_csv_merge",
+            record_count=len(merged_df),
+            columns=merged_df.columns.tolist(),
+            success=True
+        )
+        
+        return {
+            "featured_df": merged_df,
+            "reports": {
+                "validation_report": combined_reports["validation_reports"],
+                "corrections_log": combined_reports["corrections_logs"],
+                "feature_schema": combined_reports["feature_schemas"][0] if combined_reports["feature_schemas"] else {},
+                "merge_info": {
+                    "total_files": len(files),
+                    "total_rows": len(merged_df),
+                    "files_processed": [f.filename for f in files]
+                }
+            }
+        }
+        
+    except Exception as e:
+        secure_logger.error(f"❌ Failed to merge datasets: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to merge datasets: {str(e)}"
+        )
+
 def _run_parallel_forecasting(df_json: str, all_metrics_to_forecast: list) -> tuple:
     """
     Helper function to run parallel forecasting in a separate thread.
@@ -405,34 +493,45 @@ def _run_parallel_departmental_forecasting(df_json: str, departments: list) -> d
 # This endpoint is UNTOUCHED. It works perfectly.
 @router.post("/full_report")
 async def get_full_financial_report(
-    file: UploadFile = File(
-        ...,
-        description="The financial data in CSV format. The system will autonomously parse any column schema."
-    ), 
     mode: str = Form(
         "finance_guardian",
         description="The persona for the agent's narrative generation. Use 'finance_guardian' for internal operational insights, or 'financial_storyteller' for external stakeholder narratives."
-    )
+    ),
+    file: UploadFile = File(None, description="Single file (backward compatibility)"),
+    files: list[UploadFile] = File(None, description="Multiple files for bulk upload")
 ):
     """
-    **One-Shot Analysis Endpoint**
+    **One-Shot Analysis Endpoint with Bulk Upload Support**
     
-    This is a powerful endpoint that runs the entire AIML pipeline on a given CSV and returns a complete, structured dashboard report.
+    This is a powerful endpoint that runs the entire AIML pipeline on CSV file(s) and returns a complete, structured dashboard report.
     It does not have conversational memory. Use this for generating static reports or initial dashboard loads.
     
-    - **Upload a CSV**: The agent will clean it, validate it, and normalize it.
+    - **Upload CSV file(s)**: Single or multiple files supported. Files will be merged chronologically into one dataset.
     - **Receive a full report**: Includes KPIs, 3-month forecasts for all key metrics (revenue, expenses, profit, cashflow, growth_rate), detected anomalies, correlation insights, and narrative summaries.
     - **Choose a persona**: Select `finance_guardian` or `financial_storyteller` to tailor the narrative output.
     """
     # Generate unique task ID for progress tracking
     task_id = str(uuid.uuid4())
     
+    # Handle both single file (backward compatibility) and multiple files
+    uploaded_files = []
+    if files and any(f for f in files if f.filename):
+        # Multiple files provided
+        uploaded_files = [f for f in files if f.filename]
+    elif file and file.filename:
+        # Single file provided (backward compatibility)
+        uploaded_files = [file]
+    else:
+        raise HTTPException(status_code=400, detail="No files provided. Please upload at least one CSV file.")
+    
     # DEBUG: Log request received
-    secure_logger.info(f"📥 FULL_REPORT REQUEST RECEIVED - File: {file.filename}, Mode: {mode}, Task: {task_id}")
+    file_names = [f.filename for f in uploaded_files]
+    secure_logger.info(f"📥 FULL_REPORT REQUEST RECEIVED - Files: {file_names}, Mode: {mode}, Task: {task_id}")
     
-    update_progress(task_id, "upload", 5, "Processing uploaded file...")
+    update_progress(task_id, "upload", 5, f"Processing {len(uploaded_files)} uploaded file(s)...")
     
-    processing_results = process_uploaded_file(file)
+    # Process and merge all uploaded files
+    processing_results = process_uploaded_files(uploaded_files)
     featured_df = processing_results["featured_df"]
     
     update_progress(task_id, "validation", 15, "Data validated and features engineered")
@@ -543,11 +642,15 @@ async def get_full_financial_report(
                 "status": "Success"
             }
     
-    # Use revenue for anomaly detection (primary metric)
-    update_progress(task_id, "analytics", 80, "Detecting anomalies and analyzing correlations...")
+    # Use multi-metric anomaly detection across all key KPIs (enhanced v2)
+    update_progress(task_id, "analytics", 80, "Detecting anomalies across all metrics with ensemble AI...")
     
-    anomaly_module = AnomalyDetectionModule()
-    anomalies = anomaly_module.detect_anomalies(featured_df, metric='revenue')
+    # Enhanced anomaly detection: analyze top 10 financial metrics
+    anomaly_module = AnomalyDetectionModule(confidence_threshold=0.5)
+    priority_metrics = ['revenue', 'profit', 'expenses', 'cashflow', 
+                       'profit_margin', 'working_capital', 'ar', 'ap',
+                       'free_cash_flow', 'expense_ratio']
+    anomalies = anomaly_module.detect_anomalies(featured_df, metrics=priority_metrics, method='ensemble')
     
     correlation_module = CrossMetricCorrelationTrendMiningEngine()
     correlation_report = correlation_module.generate_correlation_report(featured_df)
@@ -841,8 +944,12 @@ async def agent_analyze_and_respond(
     featured_df = processing_results["featured_df"]
     forecasting_module = ForecastingModule(metric='revenue')
     forecast, _ = forecasting_module.generate_forecast(featured_df)
-    anomaly_module = AnomalyDetectionModule()
-    anomalies = anomaly_module.detect_anomalies(featured_df, metric='revenue')
+    
+    # Enhanced multi-metric anomaly detection
+    anomaly_module = AnomalyDetectionModule(confidence_threshold=0.5)
+    priority_metrics = ['revenue', 'profit', 'expenses', 'cashflow']
+    anomalies = anomaly_module.detect_anomalies(featured_df, metrics=priority_metrics, method='ensemble')
+    
     explainer_module = ExplainabilityAuditLayer()
     profit_drivers = explainer_module.get_profit_drivers(featured_df)
     dashboard_module = BusinessDashboardOutputLayer()

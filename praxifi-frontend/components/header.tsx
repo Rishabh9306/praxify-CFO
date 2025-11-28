@@ -24,7 +24,7 @@ export const Header = () => {
       <header className="flex items-center justify-between container">
         <Link href="/">
           <Image 
-            src="/long_logo.png" 
+            src="/praxifi-text.svg" 
             alt="Praxifi" 
             width={151} 
             height={40}

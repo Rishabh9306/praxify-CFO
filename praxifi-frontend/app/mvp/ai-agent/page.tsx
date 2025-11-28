@@ -310,7 +310,7 @@ export default function AIAgentPage() {
           <div className="flex items-center justify-between min-h-[48px]">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white/10 rounded-lg overflow-hidden relative">
-                <Image src="/logo.png" alt="Praxifi" fill className="object-cover scale-150" />
+                <Image src="/praxifi-logo.svg" alt="Praxifi" fill className="object-cover scale-150" />
               </div>
               <div>
                 <h1 className="text-base font-bold text-white">AI Financial Analyst</h1>
@@ -357,7 +357,7 @@ export default function AIAgentPage() {
               >
                 {message.role === 'assistant' && (
                   <div className="flex-shrink-0 w-9 h-9 bg-white/10 rounded-lg overflow-hidden relative">
-                    <Image src="/logo.png" alt="Praxifi" fill className="object-cover scale-150" />
+                    <Image src="/praxifi-logo.svg" alt="Praxifi" fill className="object-cover scale-150" />
                   </div>
                 )}
                 
@@ -385,7 +385,7 @@ export default function AIAgentPage() {
                     )}
                   </div>
                   <p className="text-xs text-white/40 mt-2">
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
 
@@ -400,7 +400,7 @@ export default function AIAgentPage() {
             {isLoading && (
               <div className="flex gap-4 justify-start">
                 <div className="flex-shrink-0 w-9 h-9 bg-white/10 rounded-lg overflow-hidden relative">
-                  <Image src="/logo.png" alt="Praxifi" fill className="object-cover scale-150" />
+                  <Image src="/praxifi-logo.svg" alt="Praxifi" fill className="object-cover scale-150" />
                 </div>
                 <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3">
                   <div className="flex items-center gap-2">
