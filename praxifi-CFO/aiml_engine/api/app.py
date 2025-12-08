@@ -9,7 +9,6 @@ app = FastAPI(
 )
 
 # Configure CORS for production and development
-# For production: Update these URLs with your actual domain
 import os
 ENV = os.getenv("ENV", "development")
 
@@ -18,23 +17,22 @@ if ENV == "production":
     ALLOWED_ORIGINS = [
         "https://praxifi.com",       
         "https://www.praxifi.com",   
-        "https://api.praxifi.com",   
+        "https://api.praxifi.com",
+        "https://*.vercel.app",  # Vercel preview deployments
     ]
 else:
-    # Development CORS - Allow all origins for development with ngrok
-    # Explicitly include localhost and ngrok domains
+    # Development CORS - Allow localhost
     ALLOWED_ORIGINS = [
-        "*",  # Allow all for development
         "http://localhost:3000",
         "http://localhost:3001",
-        "https://*.ngrok-free.dev",
-        "https://*.ngrok.io",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
     ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=False,  # Changed to False for wildcard origins
+    allow_credentials=True,
     allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
     allow_headers=["*"],  # Allow all headers
     expose_headers=["*"],  # Expose all headers (required for SSE)
@@ -49,18 +47,3 @@ def read_root():
         "message": "Welcome to the Agentic CFO Copilot API",
         "documentation": "/docs"
     }
-
-# Explicit CORS preflight handler for ngrok compatibility
-@app.options("/{path:path}")
-async def options_handler(path: str):
-    """Handle CORS preflight requests explicitly for ngrok"""
-    from fastapi.responses import Response
-    return Response(
-        status_code=200,
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Max-Age": "3600",
-        }
-    )

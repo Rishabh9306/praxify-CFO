@@ -32,33 +32,54 @@ class ScenarioSimulationEngine:
         if 'cashflow' not in sim_df.columns:
             sim_df['cashflow'] = 0 # Assume 0 if not present for this simulation
         
-        baseline_total_profit = sim_df['profit'].sum()
-        baseline_total_cashflow = sim_df['cashflow'].sum()
-        
         # --- Apply the Change ---
         multiplier = 1 + (change_pct / 100.0)
         sim_df[parameter] *= multiplier
         
-        # --- Recalculate Dependent Metrics ---
-        # The core of the simulation: how does the change propagate?
-        if 'revenue' in sim_df.columns and 'expenses' in sim_df.columns:
-            # Recalculate profit based on the potentially modified revenue or expenses
-            sim_df['simulated_profit'] = sim_df['revenue'] - sim_df['expenses']
+        # --- Calculate Baseline and Simulated Values ---
+        # The key is to use CONSISTENT logic for both baseline and simulation
+        
+        if parameter in ['revenue', 'expenses']:
+            # For revenue/expenses: baseline and simulated profit both derive from revenue - expenses
+            baseline_total_profit = (df['revenue'] - df['expenses']).sum()
+            simulated_total_profit = (sim_df['revenue'] - sim_df['expenses']).sum()
+            
+            # Cashflow changes proportionally to profit change
+            if baseline_total_profit != 0:
+                profit_change_ratio = simulated_total_profit / baseline_total_profit
+                simulated_total_cashflow = df['cashflow'].sum() * profit_change_ratio
+            else:
+                simulated_total_cashflow = df['cashflow'].sum()
+            baseline_total_cashflow = df['cashflow'].sum()
+                
+        elif parameter == 'profit':
+            # For profit: use the profit column directly (not revenue - expenses)
+            baseline_total_profit = df['profit'].sum()
+            simulated_total_profit = sim_df['profit'].sum()
+            
+            # Cashflow changes proportionally to profit change
+            if baseline_total_profit != 0:
+                profit_change_ratio = simulated_total_profit / baseline_total_profit
+                simulated_total_cashflow = df['cashflow'].sum() * profit_change_ratio
+            else:
+                simulated_total_cashflow = df['cashflow'].sum()
+            baseline_total_cashflow = df['cashflow'].sum()
+                
+        elif parameter in ['cashflow', 'cash_flow']:
+            # For cashflow: profit stays unchanged, only cashflow changes
+            baseline_total_profit = df['profit'].sum()
+            simulated_total_profit = df['profit'].sum()
+            baseline_total_cashflow = df['cashflow'].sum()
+            simulated_total_cashflow = sim_df['cashflow'].sum()
+            
         else:
-            sim_df['simulated_profit'] = sim_df.get('profit', 0)
-
-        # For this simulation, we'll assume cashflow changes proportionally to profit change
-        if baseline_total_profit != 0:
-            profit_change_ratio = sim_df['simulated_profit'].sum() / baseline_total_profit
-            sim_df['simulated_cashflow'] = sim_df['cashflow'] * profit_change_ratio
-        else:
-             sim_df['simulated_cashflow'] = sim_df['cashflow']
-
+            # For any other parameter: no changes
+            baseline_total_profit = df['profit'].sum()
+            simulated_total_profit = df['profit'].sum()
+            baseline_total_cashflow = df['cashflow'].sum()
+            simulated_total_cashflow = df['cashflow'].sum()
 
         # --- Calculate the Impact ---
-        simulated_total_profit = sim_df['simulated_profit'].sum()
-        simulated_total_cashflow = sim_df['simulated_cashflow'].sum()
-
         profit_impact = simulated_total_profit - baseline_total_profit
         cashflow_impact = simulated_total_cashflow - baseline_total_cashflow
 

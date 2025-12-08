@@ -79,7 +79,7 @@ export default function SimulatePage() {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('parameter', parameter);
-      formData.append('change_percent', change.toString());
+      formData.append('change_pct', change.toString());
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/simulate`, {
         method: 'POST',
@@ -113,17 +113,18 @@ export default function SimulatePage() {
     title, 
     baseline, 
     simulated, 
+    percentChange,
     label 
   }: { 
     title: string; 
     baseline: number | undefined; 
-    simulated: number | undefined; 
+    simulated: number | undefined;
+    percentChange: number;
     label: string;
   }) => {
     if (baseline === undefined || simulated === undefined) return null;
     
     const difference = simulated - baseline;
-    const percentChange = ((difference / baseline) * 100).toFixed(2);
     const isPositive = difference >= 0;
 
     return (
@@ -151,7 +152,7 @@ export default function SimulatePage() {
               <TrendingDown className="h-4 w-4" />
             )}
             <span className="font-semibold">
-              {isPositive ? '+' : ''}{percentChange}%
+              {isPositive ? '+' : ''}{percentChange.toFixed(2)}%
             </span>
           </div>
         </CardContent>
@@ -339,12 +340,14 @@ export default function SimulatePage() {
                   title="TOTAL PROFIT"
                   baseline={result.baseline.total_profit}
                   simulated={result.simulation_results.total_profit}
+                  percentChange={result.impact.profit_impact_percentage}
                   label="total_profit"
                 />
                 <ComparisonCard
                   title="TOTAL CASHFLOW"
                   baseline={result.baseline.total_cashflow}
                   simulated={result.simulation_results.total_cashflow}
+                  percentChange={result.impact.cashflow_impact_percentage}
                   label="total_cashflow"
                 />
               </div>

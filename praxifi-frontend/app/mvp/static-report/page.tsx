@@ -339,7 +339,6 @@ export default function StaticReportPage() {
         method: 'POST',
         body: formData,
         headers: {
-          'ngrok-skip-browser-warning': 'true',  // Required for ngrok free tier
           'X-Request-ID': requestId,  // Track this specific request
         },
         // No signal, no timeout - just wait for response
@@ -356,8 +355,7 @@ export default function StaticReportPage() {
       const data = await response.json();
       console.log('✅ Data parsed successfully, size:', JSON.stringify(data).length, 'bytes');
       
-      // Note: EventSource for progress updates disabled due to ngrok SSE limitations
-      // The report generation still works perfectly, just without real-time progress
+      // Note: Real-time progress updates with EventSource can be enabled if needed
       // if (data.task_id) {
       //   console.log('🔌 Connecting to progress stream:', data.task_id);
       //   eventSource = connectToProgressStream(data.task_id);
