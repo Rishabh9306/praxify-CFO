@@ -13,20 +13,21 @@ import os
 ENV = os.getenv("ENV", "development")
 
 if ENV == "production":
-    # Production CORS - Update with your actual domain!
+    # Production CORS - Praxifi domains
     ALLOWED_ORIGINS = [
         "https://praxifi.com",       
         "https://www.praxifi.com",   
         "https://api.praxifi.com",
-        "https://*.vercel.app",  # Vercel preview deployments
     ]
 else:
-    # Development CORS - Allow localhost
+    # Development CORS - Allow localhost and Vercel preview deployments
     ALLOWED_ORIGINS = [
         "http://localhost:3000",
         "http://localhost:3001",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
+        "https://praxifi.com",       
+        "https://www.praxifi.com",
     ]
 
 app.add_middleware(
