@@ -8,35 +8,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS for production and development
-import os
-ENV = os.getenv("ENV", "development")
-
-if ENV == "production":
-    # Production CORS - Praxifi domains
-    ALLOWED_ORIGINS = [
-        "https://praxifi.com",       
-        "https://www.praxifi.com",   
-        "https://api.praxifi.com",
-    ]
-else:
-    # Development CORS - Allow localhost and Vercel preview deployments
-    ALLOWED_ORIGINS = [
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
-        "https://praxifi.com",       
-        "https://www.praxifi.com",
-    ]
-
+# Configure CORS with regex pattern to allow all Vercel deployments
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app|https://praxifi\.com|https://www\.praxifi\.com|https://api\.praxifi\.com|http://localhost:\d+|http://127\.0\.0\.1:\d+",
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
-    allow_headers=["*"],  # Allow all headers
-    expose_headers=["*"],  # Expose all headers (required for SSE)
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Include the API router from the endpoints file
