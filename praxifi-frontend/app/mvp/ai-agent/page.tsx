@@ -36,13 +36,7 @@ export default function AIAgentPage() {
   const router = useRouter();
   const { setUploadedFile, setAgentData: setContextAgentData, setSessionId, addToSessionHistory } = useAppContext();
   
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: "Hello! I'm your AI Financial Analyst powered by **PRAXIFI**. Upload a CSV file with your financial data and ask me anything about it.",
-      timestamp: new Date(),
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,6 +44,7 @@ export default function AIAgentPage() {
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
   const [showReportPanel, setShowReportPanel] = useState(false);
   const [agentData, setAgentData] = useState<any>(null);
+  const [mounted, setMounted] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -59,6 +54,18 @@ export default function AIAgentPage() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // Initialize messages after mount to avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+    setMessages([
+      {
+        role: 'assistant',
+        content: "Hello! I'm your AI Financial Analyst powered by **PRAXIFI**. Upload a CSV file with your financial data and ask me anything about it.",
+        timestamp: new Date(),
+      }
+    ]);
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
