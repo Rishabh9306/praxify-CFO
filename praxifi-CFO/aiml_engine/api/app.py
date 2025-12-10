@@ -8,10 +8,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS with regex pattern to allow all Vercel deployments
+# Configure CORS with regex pattern to allow Vercel deployments, ngrok, and local development
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://.*\.vercel\.app|https://praxifi\.com|https://www\.praxifi\.com|https://api\.praxifi\.com|http://localhost:\d+|http://127\.0\.0\.1:\d+",
+    allow_origin_regex=r"https://.*\.vercel\.app|https://praxifi\.com|https://www\.praxifi\.com|https://.*\.ngrok-free\.app|https://.*\.ngrok\.io|http://localhost:\d+|http://127\.0\.0\.1:\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
