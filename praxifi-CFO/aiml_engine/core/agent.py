@@ -26,7 +26,8 @@ class Agent:
     """
     def __init__(self, system_prompt: str):
         # We use a system prompt to define the AI's persona and rules.
-        self.model = genai.GenerativeModel('gemini-2.5-pro', system_instruction=system_prompt)
+        # Changed from gemini-2.5-pro to gemini-2.5-flash (higher quota, faster, still excellent quality)
+        self.model = genai.GenerativeModel('gemini-2.5-flash', system_instruction=system_prompt)
         # We start a chat session to maintain context within the model itself
         self.chat = self.model.start_chat(history=[])
 

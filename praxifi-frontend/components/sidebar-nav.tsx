@@ -7,7 +7,9 @@ import {
   GitBranch, 
   FileText, 
   Settings,
-  Home
+  Home,
+  Sparkles,
+  BarChart3
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -23,8 +25,9 @@ export function SidebarNav() {
   const navItems = [
     { name: "Home", href: "/", icon: Home },
     { name: "MVP", href: "/upload", icon: Upload },
-    { name: "Simulate", href: "/simulate", icon: GitBranch },
+    { name: "TaxIQ", href: "/taxiq", icon: Sparkles },
     { name: "Reports", href: "/reports", icon: FileText },
+    { name: "Simulate", href: "/simulate", icon: BarChart3 },
     { name: "Settings", href: "/settings", icon: Settings },
   ]
 

@@ -4,6 +4,7 @@ import type React from "react"
 import { Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { AppProvider } from "@/lib/app-context"
+import { AuthProvider } from "@/lib/auth-context"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Header } from "@/components/header"
 import { SidebarNav } from "@/components/sidebar-nav"
@@ -23,9 +24,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistMono.variable} antialiased`} suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <AppProvider>
-            <LayoutContent>{children}</LayoutContent>
-          </AppProvider>
+          <AuthProvider>
+            <AppProvider>
+              <LayoutContent>{children}</LayoutContent>
+            </AppProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
@@ -35,10 +38,11 @@ export default function RootLayout({
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const isHomePage = pathname === "/"
+  const isLoginPage = pathname === "/login"
   
   return (
     <>
-      {!isHomePage && <Header />}
+      {!isHomePage && !isLoginPage && <Header />}
       {isHomePage && <SidebarNav />}
       {children}
     </>

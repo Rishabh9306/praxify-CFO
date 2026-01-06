@@ -90,7 +90,7 @@ const KPICard = ({ title, value, icon: Icon, trend, suffix = '', isCurrency = fa
         <div className="flex items-end justify-between">
           <div>
             <div className="flex items-baseline gap-1">
-              {isCurrency && <span className="text-xl font-bold text-white">$</span>}
+              {isCurrency && <span className="text-xl font-bold text-white">₹</span>}
               <p className="text-3xl font-bold text-white">{displayValue}</p>
               {suffix && <span className="text-sm text-white/70 ml-1">{suffix}</span>}
             </div>
@@ -1021,7 +1021,7 @@ export default function InsightsPage() {
                                 <p className="text-xs text-white/60 mb-1.5 font-medium uppercase tracking-wide">Actual Value</p>
                                 <p className="text-2xl font-black text-white">
                                   {typeof anomaly.value === 'number' 
-                                    ? `$${anomaly.value.toLocaleString()}` 
+                                    ? `₹${anomaly.value.toLocaleString()}` 
                                     : anomaly.value}
                                 </p>
                               </div>
@@ -1029,7 +1029,7 @@ export default function InsightsPage() {
                                 <p className="text-xs text-white/60 mb-1.5 font-medium uppercase tracking-wide">Expected Value</p>
                                 <p className="text-2xl font-black text-white/70">
                                   {typeof anomaly.expected_value_mean === 'number'
-                                    ? `$${anomaly.expected_value_mean.toLocaleString()}`
+                                    ? `₹${anomaly.expected_value_mean.toLocaleString()}`
                                     : anomaly.expected_value_mean || 'N/A'}
                                 </p>
                               </div>
@@ -1527,7 +1527,7 @@ export default function InsightsPage() {
                             }}
                             itemStyle={{ color: '#fff' }}
                             formatter={(value: any, name: any, props: any) => [
-                              `$${Number(value).toLocaleString()}`,
+                              `₹${Number(value).toLocaleString()}`,
                               props.payload.name
                             ]}
                           />
@@ -1752,7 +1752,7 @@ export default function InsightsPage() {
                             <p className="text-xs text-white/60">Revenue</p>
                           </div>
                           <p className="text-lg font-bold text-green-400">
-                            ${spike.value?.toLocaleString() || spike.revenue?.toLocaleString()}
+                            ₹{spike.value?.toLocaleString() || spike.revenue?.toLocaleString()}
                           </p>
                         </div>
                       ))}
@@ -1782,7 +1782,7 @@ export default function InsightsPage() {
                             <p className="text-xs text-white/60">Expenses</p>
                           </div>
                           <p className="text-lg font-bold text-red-400">
-                            ${spike.value?.toLocaleString() || spike.expenses?.toLocaleString()}
+                            ₹{spike.value?.toLocaleString() || spike.expenses?.toLocaleString()}
                           </p>
                         </div>
                       ))}

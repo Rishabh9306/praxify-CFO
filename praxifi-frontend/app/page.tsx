@@ -1,5 +1,8 @@
 "use client"
 
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 import { Hero } from "@/components/hero"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -27,6 +30,27 @@ import {
 } from "lucide-react"
 
 export default function Home() {
+  const { user, loading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login")
+    }
+  }, [user, loading, router])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-pulse text-white text-xl font-mono">Loading...</div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
+  }
+
   const features = [
     {
       icon: Upload,
@@ -62,9 +86,9 @@ export default function Home() {
     },
     {
       icon: GitBranch,
-      title: "Scenario Simulation",
-      description: "Test what-if scenarios instantly with real-time KPI impact calculations and sensitivity analysis.",
-      href: "/simulate",
+      title: "TaxIQ - GST Intelligence",
+      description: "AI-powered GST compliance, ITC optimization, RCM detection, and tax intelligence for Indian businesses.",
+      href: "/taxiq",
       color: "text-pink-500",
       gradient: "from-pink-500/20 to-pink-500/5"
     },
@@ -114,7 +138,7 @@ export default function Home() {
     "Bulk CSV upload with intelligent merging",
     "37+ KPIs with regional breakdowns",
     "Multi-metric anomaly detection",
-    "6-algorithm ensemble with confidence scoring",
+    "GST intelligence with ITC optimization",
     "SHAP profit driver analysis",
     "Instant scenario simulation testing"
   ]
@@ -369,6 +393,7 @@ export default function Home() {
               <h3 className="font-bold text-lg mb-6 font-mono text-white">PRODUCT</h3>
               <ul className="space-y-3 text-sm text-muted-foreground">
                 <li><Link href="/upload" className="hover:text-foreground transition-colors">MVP Portal</Link></li>
+                <li><Link href="/taxiq" className="hover:text-foreground transition-colors">TaxIQ</Link></li>
                 <li><Link href="/simulate" className="hover:text-foreground transition-colors">Scenario Simulation</Link></li>
                 <li><Link href="/reports" className="hover:text-foreground transition-colors">Session Reports</Link></li>
               </ul>

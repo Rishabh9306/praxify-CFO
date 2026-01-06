@@ -79,7 +79,7 @@ export default function SimulatePage() {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('parameter', parameter);
-      formData.append('change_percent', change.toString());
+      formData.append('change_pct', change.toString());
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/simulate`, {
         method: 'POST',
@@ -135,13 +135,13 @@ export default function SimulatePage() {
           <div>
             <p className="text-xs text-white/50 mb-1">Baseline</p>
             <p className="text-2xl font-bold text-white">
-              ${baseline.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              ₹{baseline.toLocaleString(undefined, { maximumFractionDigits: 0 })}
             </p>
           </div>
           <div>
             <p className="text-xs text-white/50 mb-1">Simulated</p>
             <p className="text-2xl font-bold text-white">
-              ${simulated.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              ₹{simulated.toLocaleString(undefined, { maximumFractionDigits: 0 })}
             </p>
           </div>
           <div className={`flex items-center gap-2 ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
@@ -364,7 +364,7 @@ export default function SimulatePage() {
                     <div className="p-4 bg-white/10 rounded-lg border border-white/20">
                       <p className="text-xs text-white/50 mb-2">Profit Impact</p>
                       <p className="text-2xl font-bold text-white mb-1">
-                        ${result.impact.profit_impact_absolute.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        ₹{result.impact.profit_impact_absolute.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                       </p>
                       <p className={`text-sm font-semibold ${result.impact.profit_impact_absolute >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {result.impact.profit_impact_absolute >= 0 ? '+' : ''}
@@ -374,7 +374,7 @@ export default function SimulatePage() {
                     <div className="p-4 bg-white/10 rounded-lg border border-white/20">
                       <p className="text-xs text-white/50 mb-2">Cashflow Impact</p>
                       <p className="text-2xl font-bold text-white mb-1">
-                        ${result.impact.cashflow_impact_absolute.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        ₹{result.impact.cashflow_impact_absolute.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                       </p>
                       <p className={`text-sm font-semibold ${result.impact.cashflow_impact_absolute >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {result.impact.cashflow_impact_absolute >= 0 ? '+' : ''}

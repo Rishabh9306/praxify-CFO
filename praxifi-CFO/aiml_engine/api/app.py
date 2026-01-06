@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .endpoints import router as api_router
+from .tax_routes import router as tax_router
 
 app = FastAPI(
     title="Agentic CFO Copilot API",
@@ -43,11 +44,18 @@ app.add_middleware(
 # Include the API router from the endpoints file
 app.include_router(api_router, prefix="/api")
 
+# Include the TaxIQ router
+app.include_router(tax_router)
+
 @app.get("/", tags=["Root"])
 def read_root():
     return {
-        "message": "Welcome to the Agentic CFO Copilot API",
-        "documentation": "/docs"
+        "message": "Welcome to the Agentic CFO Copilot API with TaxIQ - GST & Tax Intelligence Engine",
+        "documentation": "/docs",
+        "features": {
+            "financial_intelligence": "/api/*",
+            "tax_intelligence": "/api/tax/*"
+        }
     }
 
 # Explicit CORS preflight handler for ngrok compatibility

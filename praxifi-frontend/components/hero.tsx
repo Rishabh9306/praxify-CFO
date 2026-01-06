@@ -24,9 +24,10 @@ export function Hero() {
           <Image 
             src="/praxifi-text.svg" 
             alt="Praxifi" 
-            width={151} 
-            height={40}
-            className="h-[35px] md:h-[40px] w-auto"
+            width={158} 
+            height={42}
+            className="w-auto"
+            style={{ height: "42px" }}
             priority
           />
         </Link>
@@ -45,7 +46,8 @@ export function Hero() {
             <p className="text-base md:text-lg lg:text-xl text-white/90 mb-6 leading-relaxed max-w-2xl">
               Transform your financial data into actionable insights with{" "}
               <span className="text-white font-semibold">predictive forecasting</span>,{" "}
-              <span className="text-white font-semibold">conversational AI</span>, and{" "}
+              <span className="text-white font-semibold">conversational AI</span>,{" "}
+              <span className="text-white font-semibold">GST intelligence</span>, and{" "}
               <span className="text-white font-semibold">intelligent scenario planning</span>.
             </p>
             
@@ -75,8 +77,8 @@ export function Hero() {
                 </Link>
               </Button>
               <Button asChild size="sm" variant="glass" className="gap-2">
-                <Link href="/simulate">
-                  Try Simulation
+                <Link href="/taxiq">
+                  TaxIQ
                 </Link>
               </Button>
             </div>

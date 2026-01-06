@@ -254,7 +254,7 @@ export async function generateServerSidePDF(
       
       const tableData = breakdowns.revenue_by_region.map((item: any) => [
         item.region || item.name,
-        `$${item.total_revenue?.toLocaleString() || item.revenue?.toLocaleString() || item.value?.toLocaleString() || 0}`
+        `₹${item.total_revenue?.toLocaleString() || item.revenue?.toLocaleString() || item.value?.toLocaleString() || 0}`
       ]);
 
       autoTable(pdf, {
@@ -282,7 +282,7 @@ export async function generateServerSidePDF(
       
       const tableData = breakdowns.expenses_by_department.map((item: any) => [
         item.department || item.name,
-        `$${item.total_expenses?.toLocaleString() || item.expenses?.toLocaleString() || item.value?.toLocaleString() || 0}`
+        `₹${item.total_expenses?.toLocaleString() || item.expenses?.toLocaleString() || item.value?.toLocaleString() || 0}`
       ]);
 
       autoTable(pdf, {
@@ -310,7 +310,7 @@ export async function generateServerSidePDF(
       
       const tableData = breakdowns.profit_by_region.map((item: any) => [
         item.region || item.name,
-        `$${item.total_profit?.toLocaleString() || item.profit?.toLocaleString() || item.value?.toLocaleString() || 0}`
+        `₹${item.total_profit?.toLocaleString() || item.profit?.toLocaleString() || item.value?.toLocaleString() || 0}`
       ]);
 
       autoTable(pdf, {
