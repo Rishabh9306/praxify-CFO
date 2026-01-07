@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/lib/app-context';
+import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -29,6 +30,7 @@ import { sendReportEmail } from '@/lib/email-service';
 
 export default function StaticReportPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const { setUploadedFile, setUploadConfig, setFullReportData } = useAppContext();
   
   const [files, setFiles] = useState<File[]>([]);
@@ -324,6 +326,30 @@ export default function StaticReportPage() {
         requestId 
       });
       
+      console.log('🔍 STATIC-REPORT STEP 1: Checking user authentication...');
+      console.log('🔍 user:', user);
+      console.log('🔍 user?.email:', user?.email);
+      console.log('🔍 user?.uid:', user?.uid);
+      
+      // CRITICAL: Get Firebase ID token
+      let token: string | null = null;
+      if (user) {
+        try {
+          console.log('🔍 STATIC-REPORT STEP 2: Calling user.getIdToken()...');
+          token = await user.getIdToken();
+          console.log('✅ STATIC-REPORT STEP 3: Got Firebase ID token successfully!');
+          console.log('✅ Token for user:', user.email);
+          console.log('🔐 Token (first 50 chars):', token.substring(0, 50));
+          console.log('🔐 Token length:', token.length);
+        } catch (error) {
+          console.error('❌ STATIC-REPORT STEP 3 FAILED: Error getting token:', error);
+        }
+      } else {
+        console.warn('⚠️ STATIC-REPORT STEP 1 WARNING: No user logged in - request will be anonymous');
+      }
+      
+      console.log('🔍 STATIC-REPORT STEP 4: Creating FormData...');
+      
       const formData = new FormData();
       // Append all files to FormData
       files.forEach((file, index) => {
@@ -331,8 +357,24 @@ export default function StaticReportPage() {
       });
       formData.append('mode', persona);  // Backend expects 'mode', not 'persona'
 
+      console.log('🔍 STATIC-REPORT STEP 5: Appending authorization_token to FormData...');
+      
+      // CRITICAL: Add token as FormData field
+      if (token) {
+        formData.append('authorization_token', token);
+        console.log('✅ STATIC-REPORT STEP 6: Token appended to FormData!');
+        console.log('📦 FormData has authorization_token:', formData.has('authorization_token'));
+        console.log('📦 FormData has files:', formData.has('files'));
+        console.log('📦 FormData has mode:', formData.has('mode'));
+        console.log('📤 Token being sent (first 50 chars):', token.substring(0, 50));
+      } else {
+        console.error('❌ STATIC-REPORT STEP 5 FAILED: No token to append!');
+        console.log('📤 Sending anonymous request (no token)');
+      }
+
       const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/full_report`;
       console.log('📡 Calling API:', apiUrl, 'RequestID:', requestId);
+      console.log('📤 STATIC-REPORT STEP 7: Sending request to API...');
 
       // NO timeout - let it run as long as needed
       const response = await fetch(apiUrl, {

@@ -5,7 +5,7 @@ import json
 import uuid
 import asyncio
 from datetime import datetime
-from fastapi import APIRouter, UploadFile, File, HTTPException, Form
+from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Header, Request
 # Use the proven, correct Response object and Python 3.9 Optional
 from starlette.responses import Response 
 from typing import Dict, Any, Optional
@@ -25,8 +25,9 @@ from aiml_engine.core.dashboard import BusinessDashboardOutputLayer
 from aiml_engine.core.explainability import ExplainabilityAuditLayer
 from aiml_engine.core.visualizations import VisualizationDataGenerator, TableGenerator
 # --- NEW INTEGRATION IMPORTS ---
-from aiml_engine.core.memory import ConversationalMemory
+from aiml_engine.core.firestore_memory import FirestoreMemory
 from aiml_engine.core.agent import Agent
+from aiml_engine.core.auth_middleware import get_current_user_email, get_user_email_or_default
 # --- DIFFERENTIAL PRIVACY INTEGRATION ---
 from aiml_engine.core.differential_privacy import DifferentialPrivacy
 # --- SECURITY LAYER INTEGRATIONS (ALL 8 LAYERS) ---
@@ -47,15 +48,12 @@ router = APIRouter(tags=["Agentic CFO Copilot"])
 # Progress tracking store (in-memory)
 progress_store: Dict[str, Dict[str, Any]] = {}
 
-# --- NEW INTEGRATION: Agent and Memory Instances ---
+# --- NEW INTEGRATION: Agent and Firestore Memory Instances ---
 SYSTEM_PROMPT = """
 You are the Agentic CFO Copilot, an expert AI financial analyst. Your persona is that of a "Finance Guardian" and "Financial Storyteller". Your tone is always professional, data-driven, and trustworthy. You must answer questions based *only* on the context provided. Do not invent information. If the answer isn't in the data, say so.
 """
 cfo_agent = Agent(system_prompt=SYSTEM_PROMPT)
-agent_memory = ConversationalMemory(
-    host=os.getenv("REDIS_HOST", "localhost"),
-    port=int(os.getenv("REDIS_PORT", 6379))
-)
+agent_memory = FirestoreMemory()
 
 # --- DIFFERENTIAL PRIVACY: Initialize privacy engine ---
 # Reads configuration from environment variables:
@@ -497,8 +495,14 @@ async def get_full_financial_report(
         "finance_guardian",
         description="The persona for the agent's narrative generation. Use 'finance_guardian' for internal operational insights, or 'financial_storyteller' for external stakeholder narratives."
     ),
+    session_id: Optional[str] = Form(
+        None,
+        description="Optional: Provide an existing session_id to group this report with previous analyses. If not provided, a new session will be auto-generated."
+    ),
     file: UploadFile = File(None, description="Single file (backward compatibility)"),
-    files: list[UploadFile] = File(None, description="Multiple files for bulk upload")
+    files: list[UploadFile] = File(None, description="Multiple files for bulk upload"),
+    authorization_token: Optional[str] = Form(None, description="Firebase Auth token as form field (alternative to header)"),
+    authorization: Optional[str] = Header(None, description="Firebase Auth Bearer token (optional)")
 ):
     """
     **One-Shot Analysis Endpoint with Bulk Upload Support**
@@ -510,6 +514,33 @@ async def get_full_financial_report(
     - **Receive a full report**: Includes KPIs, 3-month forecasts for all key metrics (revenue, expenses, profit, cashflow, growth_rate), detected anomalies, correlation insights, and narrative summaries.
     - **Choose a persona**: Select `finance_guardian` or `financial_storyteller` to tailor the narrative output.
     """
+    print("\n" + "="*80)
+    print("🚨 BACKEND: full_report ENDPOINT CALLED!")
+    print("="*80)
+    print(f"📥 Received files: {[f.filename if f else None for f in ([file] if file else []) + (files if files else [])]}")
+    print(f"📥 Received mode: {mode}")
+    print(f"📥 Received session_id: {session_id}")
+    print(f"📥 Received authorization_token (FormData): {authorization_token[:50] if authorization_token else 'None'}...")
+    print(f"📥 Received authorization (Header): {authorization[:50] if authorization else 'None'}...")
+    print("="*80)
+    
+    # CRITICAL FIX: Support token from BOTH FormData and Header
+    auth_token = authorization_token or authorization
+    
+    print(f"🔍 DEBUG: authorization_token (form field): {authorization_token[:50] if authorization_token else 'None'}...")
+    print(f"🔍 DEBUG: authorization (header): {authorization[:50] if authorization else 'None'}...")
+    print(f"🔍 DEBUG: Using token from: {'FormData' if authorization_token else 'Header' if authorization else 'None'}")
+    
+    # Add "Bearer " prefix if not present (form field won't have it)
+    if auth_token and not auth_token.startswith('Bearer '):
+        auth_token = f'Bearer {auth_token}'
+        print(f"🔍 DEBUG: Added Bearer prefix to token")
+    
+    # Extract user email from Firebase Auth token (or None for anonymous)
+    user_email = await get_current_user_email(auth_token)
+    user_email_safe = get_user_email_or_default(user_email)
+    print(f"✅ User authenticated: {user_email_safe}")
+    
     # Generate unique task ID for progress tracking
     task_id = str(uuid.uuid4())
     
@@ -526,7 +557,7 @@ async def get_full_financial_report(
     
     # DEBUG: Log request received
     file_names = [f.filename for f in uploaded_files]
-    secure_logger.info(f"📥 FULL_REPORT REQUEST RECEIVED - Files: {file_names}, Mode: {mode}, Task: {task_id}")
+    secure_logger.info(f"📥 FULL_REPORT REQUEST RECEIVED - Files: {file_names}, Mode: {mode}, Task: {task_id}, User: {user_email_safe}")
     
     update_progress(task_id, "upload", 5, f"Processing {len(uploaded_files)} uploaded file(s)...")
     
@@ -697,8 +728,14 @@ async def get_full_financial_report(
     
     dashboard_output["enhanced_kpis"] = enhanced_kpis
     
-    # Generate session_id for conversation tracking
-    session_id = f"sess_{int(datetime.now().timestamp())}"
+    # Generate or use provided session_id for conversation tracking
+    # Ignore OpenAPI default placeholder "string"
+    if not session_id or session_id == "string":
+        # Auto-generate if not provided or if it's the OpenAPI default
+        session_id = f"sess_{int(datetime.now().timestamp())}"
+        print(f"🔄 Auto-generated session_id: {session_id}")
+    else:
+        print(f"♻️ Using provided session_id: {session_id}")
     
     # LAYER 7: Check privacy budget before processing
     current_epsilon = privacy_engine.epsilon if privacy_engine.enabled else 0.0
@@ -869,6 +906,48 @@ All forecast models operational. {len(all_model_health)} metrics forecasted with
     # Use the proven manual serialization method
     json_string = json.dumps(cleaned_data, cls=CustomJSONEncoder)
     
+    # ========================================
+    # STORE REPORT IN FIRESTORE
+    # ========================================
+    try:
+        # CRITICAL FIX: Support token from BOTH FormData and Header
+        auth_token = authorization_token or authorization
+        
+        # Add "Bearer " prefix if not present
+        if auth_token and not auth_token.startswith('Bearer '):
+            auth_token = f'Bearer {auth_token}'
+        
+        # Extract user email from Firebase Auth token (or use "anonymous")
+        user_email = await get_current_user_email(auth_token)
+        user_email_safe = get_user_email_or_default(user_email)
+        
+        secure_logger.info(f"📊 FULL_REPORT - User: {user_email_safe}, Token source: {'FormData' if authorization_token else 'Header' if authorization else 'None'}")
+        
+        # Generate unique report ID
+        report_id = f"report_{task_id}"
+        
+        # Double-clean the report data to ensure all types are Firestore-compatible
+        # First pass: convert_numpy_types (from helpers.py)
+        # Second pass: _convert_to_native_types (in store_report method)
+        report_to_store = cleaned_data["full_analysis_report"]
+        
+        # Store the full report in Firestore
+        agent_memory.store_report(
+            user_email=user_email_safe,
+            session_id=session_id,
+            report_id=report_id,
+            report_data=report_to_store
+        )
+        
+        secure_logger.info(f"✅ Stored full report in Firestore - Session: {session_id}, User: {user_email_safe}, Report: {report_id}")
+        
+    except Exception as firestore_error:
+        # Don't fail the entire request if Firestore storage fails
+        secure_logger.warning(f"⚠️ Failed to store report in Firestore: {firestore_error}")
+        # Log the type of problematic data for debugging
+        import traceback
+        secure_logger.debug(f"Firestore error details: {traceback.format_exc()}")
+    
     # DEBUG: Log before returning response
     secure_logger.info(f"✅ FULL_REPORT RESPONSE READY - Session: {final_response.get('session_id')}, Size: {len(json_string)} bytes")
     
@@ -911,6 +990,7 @@ async def simulate_scenario_endpoint(
 # This new endpoint applies the same proven manual serialization fix.
 @router.post("/agent/analyze_and_respond")
 async def agent_analyze_and_respond(
+    request: Request,
     file: UploadFile = File(
         ..., 
         description="The financial data in CSV format that provides the context for the conversation."
@@ -922,20 +1002,60 @@ async def agent_analyze_and_respond(
     session_id: Optional[str] = Form(
         None, 
         description="**Crucial for conversation.** Leave blank for the first question. For all follow-up questions, provide the `session_id` returned by the previous response."
-    )
+    ),
+    authorization_token: Optional[str] = Form(None, description="Firebase Auth token as form field (alternative to header)"),
+    authorization: Optional[str] = Header(None, alias="Authorization")
 ):
     """
-    **Primary Conversational Endpoint (Production-Ready)**
+    **Primary Conversational Endpoint (Production-Ready with Firebase Auth)**
     
     This is the main entry point for interacting with the AI agent. It performs a full analysis and then uses a Large Language Model (LLM) to generate a human-like response to your specific query based on the data.
     
+    - **Authentication**: Supports Firebase Auth via Bearer token in Authorization header. Falls back to anonymous sessions for backward compatibility.
     - **Stateful Interaction**: It uses a `session_id` to remember the context of your conversation, allowing for intelligent follow-up questions.
+    - **Per-User Storage**: All conversations, reports, and analysis results are stored securely per user in Firebase Firestore.
     - **How it works**:
         1. On your **first request**, leave `session_id` blank. The agent will analyze the data, answer your query, and return a new `session_id`.
         2. Your application must **save this `session_id`**.
         3. On your **second and subsequent requests**, you must re-upload the file and provide the saved `session_id` to continue the conversation.
     - **Returns**: A comprehensive JSON object containing the `ai_response`, the full structured `full_analysis_report` (for building charts/tables), the `session_id`, and the `conversation_history`.
     """
+    print("\n" + "="*80)
+    print("🚨 BACKEND: analyze_and_respond ENDPOINT CALLED!")
+    print("="*80)
+    print(f"📥 Received file: {file.filename if file else 'None'}")
+    print(f"📥 Received user_query: {user_query[:100] if user_query else 'None'}...")
+    print(f"📥 Received session_id: {session_id}")
+    print(f"📥 Received authorization_token (FormData): {authorization_token[:50] if authorization_token else 'None'}...")
+    print(f"📥 Received authorization (Header): {authorization[:50] if authorization else 'None'}...")
+    print("="*80)
+    
+    # DEBUG: Log ALL headers and form fields received
+    print(f"🔍 DEBUG: ALL REQUEST HEADERS:")
+    for header_name, header_value in request.headers.items():
+        if header_name.lower() == "authorization":
+            print(f"  ✅ {header_name}: {header_value[:50]}...")
+        else:
+            print(f"  📋 {header_name}: {header_value}")
+    
+    # CRITICAL FIX: Support token from BOTH FormData and Header
+    # Frontend now sends token as FormData field due to browser/ngrok limitations
+    auth_token = authorization_token or authorization
+    
+    print(f"🔍 DEBUG: authorization_token (form field): {authorization_token[:50] if authorization_token else 'None'}...")
+    print(f"🔍 DEBUG: authorization (header): {authorization[:50] if authorization else 'None'}...")
+    print(f"🔍 DEBUG: Using token from: {'FormData' if authorization_token else 'Header' if authorization else 'None'}")
+    
+    # Add "Bearer " prefix if not present (form field won't have it)
+    if auth_token and not auth_token.startswith('Bearer '):
+        auth_token = f'Bearer {auth_token}'
+        print(f"🔍 DEBUG: Added Bearer prefix to token")
+    
+    # Extract user email from Firebase Auth token (or None for anonymous)
+    user_email = await get_current_user_email(auth_token)
+    user_email_safe = get_user_email_or_default(user_email)
+    print(f"✅ User authenticated: {user_email_safe}")
+    
     if not session_id:
         session_id = str(uuid.uuid4())
 
@@ -958,17 +1078,39 @@ async def agent_analyze_and_respond(
     )
     full_analysis["profit_drivers"] = profit_drivers
     
-    # Generate the intelligent response using the agent brain
-    ai_response_text = cfo_agent.generate_response(user_query=user_query, data_context=full_analysis)
+    # ========================================
+    # RECALL CONVERSATION HISTORY BEFORE GENERATING RESPONSE
+    # ========================================
+    # Retrieve previous conversation turns from Firestore to provide context
+    history = agent_memory.recall_related_history(
+        user_email=user_email_safe,
+        session_id=session_id
+    )
     
-    # Update the conversational memory
+    # Generate the intelligent response using the agent brain WITH conversation context
+    ai_response_text = cfo_agent.generate_response(
+        user_query=user_query, 
+        data_context=full_analysis,
+        conversation_history=history
+    )
+    
+    # Update the conversational memory in Firestore with user email
     analysis_summary = {
         "user_query": user_query, "ai_response": ai_response_text,
         "key_kpis": full_analysis.get('kpis')
     }
-    agent_memory.update_context(session_id, str(uuid.uuid4()), analysis_summary)
+    agent_memory.update_context(
+        user_email=user_email_safe,
+        session_id=session_id,
+        query_id=str(uuid.uuid4()),
+        analysis_summary=analysis_summary
+    )
     
-    history = agent_memory.recall_related_history(session_id)
+    # Recall updated conversation history from Firestore (includes the new message)
+    history = agent_memory.recall_related_history(
+        user_email=user_email_safe,
+        session_id=session_id
+    )
     
     # Assemble the final response dictionary
     final_response_data = {

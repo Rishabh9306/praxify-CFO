@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/lib/app-context';
+import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -12,6 +13,7 @@ import { PersonaMode, ForecastMetric, UploadConfig } from '@/lib/types';
 
 export default function UploadPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const { setUploadedFile, setUploadConfig, setFullReportData, setAgentData, addToSessionHistory } = useAppContext();
   
   const [file, setFile] = useState<File | null>(null);
@@ -20,6 +22,17 @@ export default function UploadPage() {
   const [metric, setMetric] = useState<ForecastMetric>('revenue');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // DEBUG: Log user state on component mount and whenever it changes
+  useEffect(() => {
+    console.log('🔍 UPLOAD PAGE: Auth state changed');
+    console.log('🔍 user:', user);
+    console.log('🔍 user?.email:', user?.email);
+    console.log('🔍 user?.uid:', user?.uid);
+    console.log('🔍 typeof user:', typeof user);
+    console.log('🔍 user is null?', user === null);
+    console.log('🔍 user is undefined?', user === undefined);
+  }, [user]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -57,21 +70,48 @@ export default function UploadPage() {
   const handleGenerateReport = async () => {
     if (!file) return;
     
+    // CRITICAL: Check if user is logged in BEFORE proceeding
+    if (!user) {
+      alert('⚠️ You must be logged in to use this feature. Please sign in with Google first.');
+      console.error('❌ BLOCKED: User not logged in. Request would be anonymous.');
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
 
     try {
+      // CRITICAL: Get Firebase ID token FIRST
+      let token: string;
+      try {
+        token = await user.getIdToken();
+        console.log('✅ Got Firebase ID token for user:', user.email);
+        console.log('🔐 Token (first 50 chars):', token.substring(0, 50));
+      } catch (error) {
+        console.error('⚠️ Failed to get Firebase ID token:', error);
+        alert('Failed to get authentication token. Please try logging out and back in.');
+        setIsLoading(false);
+        return;
+      }
+
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('persona', persona);
-      formData.append('forecast_metric', metric);
+      formData.append('mode', persona); // Backend uses 'mode' parameter
+      
+      // CRITICAL FIX: Add token as FormData field instead of header
+      formData.append('authorization_token', token);
+
+      // Only set ngrok header
+      const headers = new Headers();
+      headers.append('ngrok-skip-browser-warning', 'true');
+
+      console.log('📤 Sending request to:', `${process.env.NEXT_PUBLIC_API_URL}/api/full_report`);
+      console.log('📤 Token being sent as FormData field (first 50 chars):', token.substring(0, 50));
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/full_report`, {
         method: 'POST',
         body: formData,
-        headers: {
-          'ngrok-skip-browser-warning': 'true',
-        },
+        headers: headers,
       });
 
       if (!response.ok) {
@@ -98,22 +138,78 @@ export default function UploadPage() {
   const handleLaunchAgent = async () => {
     if (!file) return;
     
+    // CRITICAL: Check if user is logged in BEFORE proceeding
+    console.log('🔍 STEP 1: Checking user authentication state...');
+    console.log('🔍 user object:', user);
+    console.log('🔍 user?.email:', user?.email);
+    console.log('🔍 user?.uid:', user?.uid);
+    
+    if (!user) {
+      alert('⚠️ You must be logged in to use this feature. Please sign in with Google first.');
+      console.error('❌ BLOCKED: User not logged in. Request would be anonymous.');
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
 
     try {
+      // DEBUG: Check user state
+      console.log('🔍 STEP 2: User is authenticated, getting ID token...');
+      console.log('🔍 DEBUG: User object:', user);
+      console.log('🔍 DEBUG: User email:', user?.email);
+      
+      // CRITICAL: Get Firebase ID token BEFORE creating FormData
+      // This ensures we fail fast if user is not authenticated
+      if (!user) {
+        console.error('👤 ERROR: No user logged in - cannot proceed');
+        alert('You must be logged in to upload files.');
+        setIsLoading(false);
+        return;
+      }
+
+      let token: string;
+      try {
+        console.log('🔍 STEP 3: Calling user.getIdToken()...');
+        token = await user.getIdToken();
+        console.log('✅ STEP 4: Got Firebase ID token successfully!');
+        console.log('✅ Got Firebase ID token for user:', user.email);
+        console.log('🔐 Token (first 50 chars):', token.substring(0, 50));
+        console.log('🔐 Token length:', token.length);
+      } catch (error) {
+        console.error('⚠️ STEP 4 FAILED: Failed to get Firebase ID token:', error);
+        alert('Failed to get authentication token. Please try logging out and back in.');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('🔍 STEP 5: Creating FormData...');
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('persona', persona);
-      formData.append('forecast_metric', metric);
       formData.append('user_query', 'Give me a comprehensive summary of this financial data');
+      
+      // CRITICAL FIX: Add token as FormData field instead of header
+      // Some browsers/ngrok strip custom headers with FormData, but form fields always work
+      console.log('🔍 STEP 6: Appending authorization_token to FormData...');
+      formData.append('authorization_token', token);
+      
+      // Verify it was added
+      console.log('🔍 STEP 7: Verifying FormData contents...');
+      console.log('📦 FormData has authorization_token:', formData.has('authorization_token'));
+      console.log('📦 FormData has file:', formData.has('file'));
+      console.log('📦 FormData has user_query:', formData.has('user_query'));
+
+      // Only set ngrok header, NOT Authorization (it's in FormData now)
+      const headers = new Headers();
+      headers.append('ngrok-skip-browser-warning', 'true');
+
+      console.log('📤 STEP 8: Sending request to:', `${process.env.NEXT_PUBLIC_API_URL}/api/agent/analyze_and_respond`);
+      console.log('📤 Token being sent as FormData field (first 50 chars):', token.substring(0, 50));
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/agent/analyze_and_respond`, {
         method: 'POST',
         body: formData,
-        headers: {
-          'ngrok-skip-browser-warning': 'true',
-        },
+        headers,
       });
 
       if (!response.ok) {
@@ -128,7 +224,7 @@ export default function UploadPage() {
       setUploadConfig(config);
       setAgentData(data);
 
-      // Add to session history
+      // Add to session history with proper structure
       addToSessionHistory({
         session_id: data.session_id,
         timestamp: new Date().toISOString(),

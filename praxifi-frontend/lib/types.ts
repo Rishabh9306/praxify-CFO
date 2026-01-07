@@ -55,18 +55,22 @@ export interface FullReportResponse {
   timestamp?: string;
 }
 
-export interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
+// Conversation history item from backend
+export interface ConversationHistoryItem {
+  query_id: string;
+  summary: {
+    user_query: string;
+    ai_response: string;
+    key_kpis?: KPIData;
+  };
   timestamp: string;
 }
 
 export interface AgentAnalyzeResponse {
   session_id: string;
-  user_query: string;
   ai_response: string;
   full_analysis_report: FullReportResponse;
-  conversation_history: ChatMessage[];
+  conversation_history: ConversationHistoryItem[];
 }
 
 export interface SimulationResult {

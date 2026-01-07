@@ -37,8 +37,9 @@ app.add_middleware(
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=False,  # Changed to False for wildcard origins
     allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
-    allow_headers=["*"],  # Allow all headers
+    allow_headers=["*"],  # Allow all headers including Authorization
     expose_headers=["*"],  # Expose all headers (required for SSE)
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
 
 # Include the API router from the endpoints file

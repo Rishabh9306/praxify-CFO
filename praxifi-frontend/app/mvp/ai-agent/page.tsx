@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAppContext } from '@/lib/app-context';
+import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { 
   Send, 
@@ -34,6 +35,7 @@ interface Message {
 
 export default function AIAgentPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const { setUploadedFile, setAgentData: setContextAgentData, setSessionId, addToSessionHistory } = useAppContext();
   
   const [messages, setMessages] = useState<Message[]>([
@@ -59,6 +61,17 @@ export default function AIAgentPage() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // DEBUG: Log auth state changes
+  useEffect(() => {
+    console.log('🔍 AI-AGENT PAGE: Auth state changed');
+    console.log('🔍 user:', user);
+    console.log('🔍 user?.email:', user?.email);
+    console.log('🔍 user?.uid:', user?.uid);
+    console.log('🔍 typeof user:', typeof user);
+    console.log('🔍 user is null?', user === null);
+    console.log('🔍 user is undefined?', user === undefined);
+  }, [user]);
 
   useEffect(() => {
     scrollToBottom();
@@ -93,6 +106,11 @@ export default function AIAgentPage() {
   };
 
   const handleSendMessage = async () => {
+    console.log('🔍 AI-AGENT STEP 1: handleSendMessage called');
+    console.log('🔍 user object:', user);
+    console.log('🔍 user?.email:', user?.email);
+    console.log('🔍 user?.uid:', user?.uid);
+    
     if ((!input.trim() && !file) || isLoading) return;
 
     // Check if we have a file (required for first message or if no session exists)
@@ -104,6 +122,8 @@ export default function AIAgentPage() {
       }]);
       return;
     }
+
+    console.log('🔍 AI-AGENT STEP 2: Validation passed, preparing message...');
 
     const userMessage: Message = {
       role: 'user',
@@ -117,6 +137,26 @@ export default function AIAgentPage() {
     setIsLoading(true);
 
     try {
+      console.log('🔍 AI-AGENT STEP 3: Getting Firebase ID token...');
+      
+      // CRITICAL: Get Firebase ID token
+      let token: string | null = null;
+      if (user) {
+        try {
+          token = await user.getIdToken();
+          console.log('✅ AI-AGENT STEP 4: Got Firebase ID token successfully!');
+          console.log('✅ Token for user:', user.email);
+          console.log('🔐 Token (first 50 chars):', token.substring(0, 50));
+          console.log('🔐 Token length:', token.length);
+        } catch (error) {
+          console.error('❌ AI-AGENT STEP 4 FAILED: Error getting token:', error);
+        }
+      } else {
+        console.warn('⚠️ AI-AGENT STEP 3 WARNING: No user logged in - request will be anonymous');
+      }
+
+      console.log('🔍 AI-AGENT STEP 5: Creating FormData...');
+      
       const formData = new FormData();
       // File is required - use current file or the one from the session
       if (file) {
@@ -129,6 +169,24 @@ export default function AIAgentPage() {
       if (currentSessionId) {
         formData.append('session_id', currentSessionId);
       }
+
+      console.log('🔍 AI-AGENT STEP 6: Appending authorization_token to FormData...');
+      
+      // CRITICAL: Add token as FormData field
+      if (token) {
+        formData.append('authorization_token', token);
+        console.log('✅ AI-AGENT STEP 7: Token appended to FormData!');
+        console.log('📦 FormData has authorization_token:', formData.has('authorization_token'));
+        console.log('📦 FormData has file:', formData.has('file'));
+        console.log('📦 FormData has user_query:', formData.has('user_query'));
+        console.log('📤 Token being sent (first 50 chars):', token.substring(0, 50));
+      } else {
+        console.error('❌ AI-AGENT STEP 6 FAILED: No token to append!');
+        console.log('📤 Sending anonymous request (no token)');
+      }
+
+      console.log('📤 AI-AGENT STEP 8: Sending request to API...');
+      console.log('📤 API URL:', `${process.env.NEXT_PUBLIC_API_URL}/api/agent/analyze_and_respond`);
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/agent/analyze_and_respond`, {
         method: 'POST',

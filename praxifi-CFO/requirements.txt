@@ -41,6 +41,11 @@ uvicorn[standard]==0.32.1  # Latest with performance improvements
 python-multipart==0.0.12  # Latest - fixes path traversal and ReDoS vulnerabilities
 sse-starlette==2.1.3  # Server-Sent Events for real-time progress
 
+# === FIREBASE INTEGRATION ===
+# Replacing Redis with Firebase Firestore for secure, persistent storage
+firebase-admin==6.5.0  # Firebase Admin SDK for Python
+google-cloud-firestore==2.16.0  # Firestore client library
+
 # === UTILITIES AND OTHER TOOLS ===
 shap==0.45.0
 matplotlib==3.8.4

@@ -31,21 +31,39 @@ class Agent:
         # We start a chat session to maintain context within the model itself
         self.chat = self.model.start_chat(history=[])
 
-    def generate_response(self, user_query: str, data_context: Dict) -> str:
+    def generate_response(self, user_query: str, data_context: Dict, conversation_history: List[Dict] = None) -> str:
         """
         Generates an intelligent response using the user's query and the
-        current financial data context.
+        current financial data context, with awareness of previous conversation.
 
         Args:
             user_query (str): The user's natural language question.
             data_context (Dict): The JSON data from the main financial analysis.
+            conversation_history (List[Dict]): Previous conversation turns for context.
 
         Returns:
             A string containing the AI's generated response.
         """
+        # Build conversation context from history
+        conversation_context = ""
+        if conversation_history and len(conversation_history) > 1:
+            # Show last 5 conversation turns for context (excluding current one)
+            recent_history = conversation_history[-6:-1] if len(conversation_history) > 5 else conversation_history[:-1]
+            conversation_context = "\n--- PREVIOUS CONVERSATION CONTEXT ---\n"
+            for idx, turn in enumerate(recent_history, 1):
+                summary = turn.get('summary', {})
+                prev_query = summary.get('user_query', 'N/A')
+                prev_response = summary.get('ai_response', 'N/A')
+                # Truncate long responses to keep context manageable
+                if len(prev_response) > 300:
+                    prev_response = prev_response[:300] + "..."
+                conversation_context += f"\nTurn {idx}:\nUser: {prev_query}\nAssistant: {prev_response}\n"
+            conversation_context += "--- END OF PREVIOUS CONVERSATION ---\n\n"
+        
         # We construct a detailed prompt for the LLM, giving it all the information it needs.
         prompt = f"""
-        User Query: "{user_query}"
+        {conversation_context}
+        Current User Query: "{user_query}"
 
         Here is the relevant financial data context for the query:
         
@@ -55,14 +73,15 @@ class Agent:
         Key Profit Drivers: {data_context.get('profit_drivers')}
         Narrative Summary: {data_context.get('narratives')}
 
-        Based on the User Query and the provided data context, generate a concise, professional, and helpful response.
+        Based on the Current User Query, the previous conversation context, and the provided data context, generate a concise, professional, and helpful response.
         
-        --- FINAL INSTRUCTION ---
-        If the user asks for a recommendation, you are allowed to synthesize a new, actionable recommendation based on the KPIs and Profit Drivers, even if it is not listed in the "Narrative Summary" recommendations.
-        --- END OF INSTRUCTION ---
-        
-        If the query cannot be answered by the data, state that clearly.
-        Do not make up information. Base your answer strictly on the provided context.
+        --- IMPORTANT INSTRUCTIONS ---
+        1. If the user refers to previous questions or responses (e.g., "as mentioned before", "the issue we discussed"), use the conversation context to maintain continuity.
+        2. If the user asks for a recommendation, you are allowed to synthesize a new, actionable recommendation based on the KPIs and Profit Drivers.
+        3. Keep responses focused and relevant to the current query while being aware of the conversation flow.
+        4. If the query cannot be answered by the data, state that clearly.
+        5. Do not make up information. Base your answer strictly on the provided context.
+        --- END OF INSTRUCTIONS ---
         """
 
         try:

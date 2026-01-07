@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/lib/app-context';
+import { useAuth } from '@/lib/auth-context';
+import { auth } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +13,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 
 export default function ChatPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const { agentData, uploadedFile, uploadConfig, sessionId, setAgentData, addToSessionHistory, setUploadedFile } = useAppContext();
   const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([
     { 
@@ -25,9 +28,20 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // DEBUG: Log auth state changes
+  useEffect(() => {
+    console.log('🔍 CHAT PAGE: Auth state changed');
+    console.log('🔍 user:', user);
+    console.log('🔍 user?.email:', user?.email);
+    console.log('🔍 user?.uid:', user?.uid);
+    console.log('🔍 typeof user:', typeof user);
+    console.log('🔍 user is null?', user === null);
+    console.log('🔍 user is undefined?', user === undefined);
+  }, [user]);
+
   useEffect(() => {
     // Initialize messages from conversation history
-    // Backend conversation_history format: [{query_id, summary: {user_query, ai_response, key_kpis}}]
+    // Backend conversation_history format: [{query_id, summary: {user_query, ai_response, key_kpis}, timestamp}]
     // Convert to chat format: [{role, content}]
     if (agentData && agentData.conversation_history && agentData.conversation_history.length > 0) {
       const chatMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [
@@ -36,12 +50,22 @@ export default function ChatPage() {
           content: 'Hello! I\'m your AI Financial Analyst. Ask me anything about the uploaded financial data.' 
         }
       ];
+      
+      // Process conversation history from backend
       agentData.conversation_history.forEach((item: any) => {
         if (item.summary) {
-          chatMessages.push({ role: 'user', content: item.summary.user_query });
-          chatMessages.push({ role: 'assistant', content: item.summary.ai_response });
+          const userQuery = item.summary.user_query || '';
+          const aiResponse = item.summary.ai_response || '';
+          
+          if (userQuery) {
+            chatMessages.push({ role: 'user', content: userQuery });
+          }
+          if (aiResponse) {
+            chatMessages.push({ role: 'assistant', content: aiResponse });
+          }
         }
       });
+      
       setMessages(chatMessages);
     }
   }, [agentData]);
@@ -66,6 +90,26 @@ export default function ChatPage() {
   };
 
   const handleSendMessage = async () => {
+    console.log('🔍 CHAT STEP 1: Checking user authentication state...');
+    console.log('🔍 user object:', user);
+    console.log('🔍 user?.email:', user?.email);
+    console.log('🔍 user?.uid:', user?.uid);
+    
+    // CRITICAL: Check if user is logged in BEFORE proceeding
+    if (!user) {
+      console.error('❌ CHAT STEP 1 FAILED: User is NOT authenticated!');
+      setMessages(prev => [
+        ...prev,
+        { role: 'assistant', content: '⚠️ You must be logged in to use this feature. Please sign in with Google first.' },
+      ]);
+      alert('⚠️ You must be logged in to use this feature. Please sign in with Google first.');
+      return;
+    }
+    
+    console.log('✅ CHAT STEP 2: User is authenticated!');
+    console.log('🔍 DEBUG: User object:', user);
+    console.log('🔍 DEBUG: User email:', user.email);
+    
     // Determine which file to use
     const fileToUse = localFile || uploadedFile;
     
@@ -91,19 +135,65 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
+      console.log('🔍 CHAT STEP 3: Calling user.getIdToken()...');
+      // CRITICAL: Get Firebase ID token FIRST before creating FormData
+      let token: string | null = null;
+      if (user) {
+        try {
+          token = await user.getIdToken();
+          console.log('✅ CHAT STEP 4: Got Firebase ID token successfully!');
+          console.log('✅ Got Firebase ID token for user:', user.email);
+          console.log('🔐 Token (first 50 chars):', token.substring(0, 50));
+          console.log('🔐 Token length:', token.length);
+        } catch (error) {
+          console.error('❌ CHAT STEP 4 FAILED: Error getting token:', error);
+          console.error('⚠️ Failed to get Firebase ID token:', error);
+        }
+      } else {
+        console.error('❌ CHAT STEP 3 FAILED: User object is null at token retrieval time!');
+        console.warn('👤 No user logged in - request will be anonymous');
+      }
+
+      console.log('🔍 CHAT STEP 5: Creating FormData...');
       const formData = new FormData();
       formData.append('file', fileToUse);
       formData.append('user_query', userMessage);
+      
+      // IMPORTANT: Include session_id for conversation continuity
       if (sessionId) {
         formData.append('session_id', sessionId);
+        console.log('📤 Continuing conversation with session_id:', sessionId);
+      } else {
+        console.log('📤 Starting new conversation (no session_id)');
       }
+
+      console.log('🔍 CHAT STEP 6: Appending authorization_token to FormData...');
+      // CRITICAL FIX: Add token as FormData field instead of header
+      if (token) {
+        formData.append('authorization_token', token);
+        console.log('✅ CHAT STEP 7: Token appended to FormData!');
+        console.log('📦 FormData has authorization_token:', formData.has('authorization_token'));
+        console.log('� FormData has file:', formData.has('file'));
+        console.log('📦 FormData has user_query:', formData.has('user_query'));
+        console.log('�📤 Sending authenticated request');
+        console.log('📤 Token being sent as FormData field (first 50 chars):', token.substring(0, 50));
+      } else {
+        console.error('❌ CHAT STEP 6 FAILED: No token to append!');
+        console.log('📤 Sending anonymous request (no token)');
+      }
+
+      // Only set ngrok header
+      const headers = new Headers();
+      headers.append('ngrok-skip-browser-warning', 'true');
+
+      console.log('📤 CHAT STEP 8: Sending request to API...');
+      console.log('📤 API URL:', `${process.env.NEXT_PUBLIC_API_URL}/api/agent/analyze_and_respond`);
+      console.log('📤 Final check - FormData has authorization_token:', formData.has('authorization_token'));
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/agent/analyze_and_respond`, {
         method: 'POST',
         body: formData,
-        headers: {
-          'ngrok-skip-browser-warning': 'true',
-        },
+        headers: headers,
       });
 
       if (!response.ok) {
@@ -111,10 +201,15 @@ export default function ChatPage() {
       }
 
       const data = await response.json();
+      console.log('✅ Received response:', { 
+        session_id: data.session_id, 
+        history_length: data.conversation_history?.length 
+      });
+      
       setAgentData(data);
       
-      // Add the AI response to messages
-      const aiResponse = data.response || data.ai_response || 'No response received';
+      // The AI response is in the ai_response field
+      const aiResponse = data.ai_response || 'No response received';
       setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
 
       // Show the report panel with dramatic slide animation
