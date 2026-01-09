@@ -160,7 +160,7 @@ curl -X POST http://localhost:8000/agent/analyze_and_respond \
 ```bash
 curl -X POST http://localhost:8000/agent/analyze_and_respond \
   -F "file=@praxifi-CFO/data/dataset.csv" \
-  -F "user_query=How urgent is the second risk?" \
+  -F "user_query=" \
   -F "session_id=<YOUR_SESSION_ID_HERE>"
 ```
 

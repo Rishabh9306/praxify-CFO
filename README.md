@@ -300,28 +300,33 @@ After:  ██████ 60s (26 layer parallel on 8 cores) ⚡
 📄 CSV Upload
     ↓
 ┌─────────────────────────────┐
-│  1. Data Ingestion          │  • Column mapping (50+ synonyms)
+│  1. Identity Management     │  • Firebase Authentication
+│        (Auth Layer)         │  • JWT Token Role-Based Access Control
+└─────────────────────────────┘
+    ↓
+┌─────────────────────────────┐
+│  2. Data Ingestion          │  • Column mapping (50+ synonyms)
 │     & Validation            │  • Type conversion & cleaning
 └─────────────────────────────┘  • Missing data imputation
     ↓
 ┌─────────────────────────────┐
-│  2. Security Layer          │  • AES-256 encryption
+│  3. Security Layer          │  • AES-256 encryption
 │     (8 Layers)              │  • PII redaction
 └─────────────────────────────┘  • ZK proof generation
     ↓
 ┌─────────────────────────────────────────────────────────────────────┐
-│  3. Parallel AI/ML Processing (8 cores)                             │
+│  4. Parallel AI/ML Processing (8 cores)                             │
 ├─────────────────────────────────────────────────────────────────────┤
 │  [Prophet]  [Anomaly]  [SHAP]  [KPIs]  [Scenarios]  [Narratives]   │
 └─────────────────────────────────────────────────────────────────────┘
     ↓
 ┌─────────────────────────────┐
-│  4. Differential Privacy    │  • Adaptive noise injection
+│  5. Differential Privacy    │  • Adaptive noise injection
 │     & Post-Processing       │  • Confidence interval correction
 └─────────────────────────────┘  • Privacy budget tracking
     ↓
 ┌─────────────────────────────┐
-│  5. Conversational Agent    │  • LLM integration (GPT-4/Claude)
+│  6. Conversational Agent    │  • LLM integration (GPT-4/Claude)
 │     (Optional)              │  • Context-aware responses
 └─────────────────────────────┘  • Session management
     ↓
@@ -378,6 +383,7 @@ User Action                  System Processing               Output
 | Requirement | Version | Notes |
 |------------|---------|-------|
 | 🐍 **Python** | 3.9+ | Required for local setup |
+| 🐍 **Firebase** | Admin SDK | Service Account Credential Required |
 | 🐳 **Docker** | 20.10+ | Recommended for production |
 | 🎼 **Docker Compose** | 2.0+ | Simplifies multi-container setup |
 
@@ -454,7 +460,7 @@ venv\Scripts\activate
 pip install -r requirements.txt
 
 # Verify installation
-python -c "import prophet; import fastapi; print('✅ Dependencies OK')"
+python -c "import prophet; import fastapi; import firebase_admin; print('✅ Dependencies OK')"
 ```
 
 #### Step 3: Start the Docker Redis Server
