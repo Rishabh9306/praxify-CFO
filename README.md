@@ -2,9 +2,8 @@
 
 ![Praxifi](praxifi-logo.png)
 
-[![MumbaiHacks](https://img.shields.io/badge/MumbaiHacks-2K25-orange.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 [![Security](https://img.shields.io/badge/Security-MAXIMUM-red.svg)](SECURITY_ARCHITECTURE.md)
 [![Accuracy](https://img.shields.io/badge/Accuracy-91.95%25-brightgreen.svg)](ALL_ISSUES_RESOLVED.md)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success.svg)](ALL_ISSUES_RESOLVED.md)
