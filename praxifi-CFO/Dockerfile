@@ -2,7 +2,7 @@
 # Optimized for production deployment with minimal image size
 
 # Stage 1: Builder stage for dependencies
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 # Set working directory
 WORKDIR /app
@@ -64,6 +64,9 @@ ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app
+
+# Ensure setuptools<80 is used — setuptools 80+ removed pkg_resources which spaCy 3.4.x requires
+RUN /opt/venv/bin/pip install --no-cache-dir "setuptools<80"
 
 # Copy application code
 COPY aiml_engine/ ./aiml_engine/
