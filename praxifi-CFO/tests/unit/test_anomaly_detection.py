@@ -1,6 +1,6 @@
 import pandas as pd
 import pytest
-from aiml_engine.core.anomaly_detection import AnomalyDetectionModule
+from aiml_engine.core.anomaly_detection_v2 import AnomalyDetectionModule
 
 @pytest.fixture
 def sample_df_with_anomaly():

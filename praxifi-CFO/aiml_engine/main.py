@@ -7,7 +7,7 @@ from aiml_engine.core.data_ingestion import DataIngestion
 from aiml_engine.core.data_validation import DataValidationQualityAssuranceEngine
 from aiml_engine.core.feature_engineering import KPIAutoExtractionDynamicFeatureEngineering
 from aiml_engine.core.forecasting import ForecastingModule
-from aiml_engine.core.anomaly_detection import AnomalyDetectionModule
+from aiml_engine.core.anomaly_detection_v2 import AnomalyDetectionModule
 from aiml_engine.core.dashboard import BusinessDashboardOutputLayer
 from aiml_engine.utils.helpers import save_json
 
