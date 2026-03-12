@@ -9,28 +9,27 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS for production and development
-# For production: Update these URLs with your actual domain
+# Configure CORS — reads ALLOWED_ORIGINS env var (comma-separated) or falls back to defaults
 import os
+
+_extra_origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+
 ENV = os.getenv("ENV", "development")
 
 if ENV == "production":
-    # Production CORS - Update with your actual domain!
     ALLOWED_ORIGINS = [
-        "https://praxifi.com",       
-        "https://www.praxifi.com",   
-        "https://api.praxifi.com",   
-    ]
+        "https://praxifi.com",
+        "https://www.praxifi.com",
+        "https://api.praxifi.com",
+    ] + _extra_origins
 else:
-    # Development CORS - Allow all origins for development with ngrok
-    # Explicitly include localhost and ngrok domains
     ALLOWED_ORIGINS = [
-        "*",  # Allow all for development
+        "*",
         "http://localhost:3000",
         "http://localhost:3001",
-        "https://*.ngrok-free.dev",
+        "https://*.ngrok-free.app",
         "https://*.ngrok.io",
-    ]
+    ] + _extra_origins
 
 app.add_middleware(
     CORSMiddleware,
